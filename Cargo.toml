@@ -1,0 +1,20 @@
+[package]
+name = "cheby"
+version = "0.1.0"
+edition = "2021"
+authors = ["VPRamon <vallespuigramon@gmail.com>"]
+description = "Chebyshev polynomial toolkit: node generation, coefficient fitting (DCT), and Clenshaw evaluation — generic over scalar type."
+license = "AGPL-3.0-only"
+readme = "README.md"
+repository = "https://github.com/Siderust/cheby"
+keywords = ["chebyshev", "interpolation", "clenshaw", "numerics", "science"]
+categories = ["science", "mathematics"]
+
+[lib]
+name = "cheby"
+
+[dependencies]
+qtty = "0.3.0"
+
+[dev-dependencies]
+approx = "0.5"
