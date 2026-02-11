@@ -90,10 +90,7 @@ mod tests {
     fn test_nodes_mapped_range() {
         let t: [f64; 9] = nodes_mapped(10.0, 20.0);
         for &x in &t {
-            assert!(
-                x >= 10.0 && x <= 20.0,
-                "mapped node {x} out of [10, 20]"
-            );
+            assert!(x >= 10.0 && x <= 20.0, "mapped node {x} out of [10, 20]");
         }
     }
 
