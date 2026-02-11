@@ -99,12 +99,7 @@ impl<T: ChebyScalar, const N: usize> ChebySegmentTable<T, N> {
     /// - `start` — start of the domain.
     /// - `end` — end of the domain.
     /// - `segment_len` — duration of each segment.
-    pub fn from_fn(
-        f: impl Fn(f64) -> T,
-        start: f64,
-        end: f64,
-        segment_len: f64,
-    ) -> Self {
+    pub fn from_fn(f: impl Fn(f64) -> T, start: f64, end: f64, segment_len: f64) -> Self {
         let span = end - start;
         let num_segments = ((span / segment_len).ceil() as usize).max(1);
         let half = segment_len * 0.5;
@@ -126,11 +121,7 @@ impl<T: ChebyScalar, const N: usize> ChebySegmentTable<T, N> {
     }
 
     /// Build from pre-computed segments.
-    pub fn from_segments(
-        segments: Vec<ChebySegment<T, N>>,
-        start: f64,
-        segment_len: f64,
-    ) -> Self {
+    pub fn from_segments(segments: Vec<ChebySegment<T, N>>, start: f64, segment_len: f64) -> Self {
         Self {
             start,
             segment_len,
@@ -266,8 +257,12 @@ mod tests {
     #[test]
     fn test_table_from_fn() {
         // Approximate sin(t) on [0, 2π] with segments of length π/2
-        let table: ChebySegmentTable<f64, 9> =
-            ChebySegmentTable::from_fn(f64::sin, 0.0, 2.0 * std::f64::consts::PI, std::f64::consts::FRAC_PI_2);
+        let table: ChebySegmentTable<f64, 9> = ChebySegmentTable::from_fn(
+            f64::sin,
+            0.0,
+            2.0 * std::f64::consts::PI,
+            std::f64::consts::FRAC_PI_2,
+        );
 
         assert_eq!(table.len(), 4);
 
@@ -284,8 +279,12 @@ mod tests {
 
     #[test]
     fn test_table_derivative() {
-        let table: ChebySegmentTable<f64, 9> =
-            ChebySegmentTable::from_fn(f64::sin, 0.0, 2.0 * std::f64::consts::PI, std::f64::consts::FRAC_PI_2);
+        let table: ChebySegmentTable<f64, 9> = ChebySegmentTable::from_fn(
+            f64::sin,
+            0.0,
+            2.0 * std::f64::consts::PI,
+            std::f64::consts::FRAC_PI_2,
+        );
 
         let t = 2.0;
         let d = table.eval_derivative(t).unwrap();
@@ -298,8 +297,7 @@ mod tests {
 
     #[test]
     fn test_table_out_of_range() {
-        let table: ChebySegmentTable<f64, 9> =
-            ChebySegmentTable::from_fn(f64::sin, 0.0, 1.0, 0.5);
+        let table: ChebySegmentTable<f64, 9> = ChebySegmentTable::from_fn(f64::sin, 0.0, 1.0, 0.5);
         assert!(table.eval(-0.1).is_none());
         // Just past the end
         assert!(table.eval(1.1).is_none());

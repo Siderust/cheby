@@ -12,8 +12,8 @@
 //! c_j = (2/N) Σ_{k=0}^{N-1} f(ξ_k) · cos(jπ(2k+1) / (2N))   for j ≥ 1
 //! ```
 
-use crate::scalar::ChebyScalar;
 use crate::nodes;
+use crate::scalar::ChebyScalar;
 
 /// Compute Chebyshev coefficients from function values at the
 /// canonical Chebyshev nodes.
@@ -119,10 +119,7 @@ mod tests {
 
         // Evaluate at t = π/2 → tau = 0.0 (midpoint maps to tau=0)
         let approx = evaluate(&coeffs, 0.0);
-        assert!(
-            (approx - 1.0).abs() < 1e-12,
-            "sin(π/2) ≈ {approx}"
-        );
+        assert!((approx - 1.0).abs() < 1e-12, "sin(π/2) ≈ {approx}");
 
         // Evaluate at t = π/4 → tau = -0.5
         let approx2 = evaluate(&coeffs, -0.5);
@@ -140,7 +137,8 @@ mod tests {
         type Kilometers = Quantity<Km>;
 
         let xi: [f64; 9] = crate::nodes();
-        let values: [Kilometers; 9] = std::array::from_fn(|k| Kilometers::new(xi[k].sin() * 1000.0));
+        let values: [Kilometers; 9] =
+            std::array::from_fn(|k| Kilometers::new(xi[k].sin() * 1000.0));
         let coeffs = fit_coeffs(&values);
         // Evaluate and compare
         let val = evaluate(&coeffs, 0.0);
