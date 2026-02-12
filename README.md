@@ -1,5 +1,9 @@
 # cheby
 
+[![Crates.io](https://img.shields.io/crates/v/cheby.svg)](https://crates.io/crates/cheby)
+[![Docs](https://docs.rs/cheby/badge.svg)](https://docs.rs/cheby)
+[![Code Quality](https://github.com/Siderust/cheby/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Siderust/cheby/actions/workflows/ci.yml)
+
 Chebyshev polynomial toolkit for scientific computing in Rust.
 
 `cheby` provides a full interpolation pipeline suitable for numerical kernels
