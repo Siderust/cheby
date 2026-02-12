@@ -2,35 +2,97 @@
 
 Chebyshev polynomial toolkit for scientific computing in Rust.
 
-Provides the full Chebyshev interpolation pipeline:
+`cheby` provides a full interpolation pipeline suitable for numerical kernels
+and ephemeris-style piecewise approximations:
 
-1. **Node generation** — Chebyshev nodes on `[-1, 1]` or mapped to an arbitrary interval.
-2. **Coefficient fitting** — DCT-based coefficient computation from function values at Chebyshev nodes.
-3. **Clenshaw evaluation** — Numerically stable evaluation of Chebyshev series (value, derivative, or both in one pass).
-4. **Segment management** — Piecewise Chebyshev approximation over uniform time segments, with automatic lookup and `t → τ` normalization.
+1. Node generation on `[-1, 1]` and mapped intervals.
+2. Coefficient fitting via DCT identities.
+3. Stable Clenshaw evaluation (value, derivative, or both).
+4. Uniform piecewise segment tables with O(1) segment lookup.
 
-All core functions are generic over a `ChebyScalar` trait, so they work with
-raw `f64` as well as typed quantities (e.g., `qtty::Quantity<Kilometer>`).
+All core APIs are generic over `ChebyScalar`, so they work with `f64` and with
+typed quantities such as `qtty::Quantity<Kilometer>`.
+
+## Installation
+
+```toml
+[dependencies]
+cheby = "0.1"
+```
 
 ## Quick start
 
 ```rust
-use cheby::{nodes, fit_coeffs, evaluate, evaluate_both};
+use cheby::{evaluate, fit_coeffs, nodes};
 
-// 1. Generate 9 Chebyshev nodes on [-1, 1]
-let xi: [f64; 9] = nodes();
-
-// 2. Sample a function at those nodes
-let values: [f64; 9] = std::array::from_fn(|k| xi[k].sin());
-
-// 3. Fit Chebyshev coefficients
+const N: usize = 9;
+let xi: [f64; N] = nodes();
+let values: [f64; N] = std::array::from_fn(|k| xi[k].sin());
 let coeffs = fit_coeffs(&values);
 
-// 4. Evaluate at an arbitrary point
-let approx = evaluate(&coeffs, 0.42);
-let (val, deriv) = evaluate_both(&coeffs, 0.42);
+let tau = 0.42;
+let approx = evaluate(&coeffs, tau);
+println!("sin({tau}) ~= {approx}");
 ```
+
+## Segment-table workflow
+
+```rust
+use cheby::ChebySegmentTable;
+
+let table: ChebySegmentTable<f64, 15> =
+    ChebySegmentTable::from_fn(f64::sin, 0.0, std::f64::consts::TAU, std::f64::consts::FRAC_PI_2);
+
+let (value, derivative) = table.eval_both(1.0).unwrap();
+println!("f(t)={value}, df/dt={derivative}");
+```
+
+## Examples
+
+Runnable examples are provided in `examples/`:
+
+- `basic_interpolation`
+- `segment_table`
+- `typed_quantities`
+
+Use:
+
+```bash
+cargo run --example basic_interpolation
+```
+
+See `examples/README.md` for details.
+
+## Tests and coverage
+
+`cheby` includes:
+
+- Unit tests inside modules.
+- Functional integration tests in `tests/functional_pipeline.rs`.
+- Doctests for public examples.
+
+Run locally:
+
+```bash
+cargo test --all-targets
+cargo test --doc
+cargo +nightly llvm-cov --workspace --all-features --doctests --summary-only
+```
+
+Coverage is gated in CI at **>= 90% line coverage**.
+
+## CI
+
+GitHub Actions workflow: `/.github/workflows/ci.yml`
+
+Jobs:
+
+- `check`
+- `fmt`
+- `clippy` (`-D warnings`)
+- `test` (unit/integration + docs)
+- `coverage` (`cargo +nightly llvm-cov`, PR summary, 90% gate)
 
 ## License
 
-AGPL-3.0
+AGPL-3.0-only

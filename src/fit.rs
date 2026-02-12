@@ -34,13 +34,13 @@ pub fn fit_coeffs<T: ChebyScalar, const N: usize>(values: &[T; N]) -> [T; N] {
     let mut coeffs = [T::zero(); N];
     let n = N as f64;
 
-    for j in 0..N {
+    for (j, coeff) in coeffs.iter_mut().enumerate() {
         let mut sum = T::zero();
-        for k in 0..N {
+        for (k, value) in values.iter().enumerate() {
             let arg = std::f64::consts::PI * (j as f64) * (2.0 * k as f64 + 1.0) / (2.0 * n);
-            sum = sum + values[k] * arg.cos();
+            sum = sum + *value * arg.cos();
         }
-        coeffs[j] = if j == 0 { sum / n } else { sum * (2.0 / n) };
+        *coeff = if j == 0 { sum / n } else { sum * (2.0 / n) };
     }
     coeffs
 }
