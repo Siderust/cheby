@@ -255,6 +255,14 @@ mod tests {
     }
 
     #[test]
+    fn test_segment_normalise() {
+        let seg = ChebySegment::new([1.0_f64; 3], 5.0, 2.0);
+        assert!((seg.normalise(5.0) - 0.0).abs() < 1e-15);
+        assert!((seg.normalise(3.0) - (-1.0)).abs() < 1e-15);
+        assert!((seg.normalise(7.0) - 1.0).abs() < 1e-15);
+    }
+
+    #[test]
     fn test_table_from_fn() {
         // Approximate sin(t) on [0, 2π] with segments of length π/2
         let table: ChebySegmentTable<f64, 9> = ChebySegmentTable::from_fn(
@@ -293,6 +301,15 @@ mod tests {
             (d - exact).abs() < 1e-8,
             "cos({t}): approx={d}, exact={exact}"
         );
+    }
+
+    #[test]
+    fn test_table_metadata() {
+        let table: ChebySegmentTable<f64, 9> = ChebySegmentTable::from_fn(f64::sin, 1.0, 3.0, 0.5);
+        assert_eq!(table.start(), 1.0);
+        assert_eq!(table.segment_len(), 0.5);
+        assert_eq!(table.end(), 3.0);
+        assert_eq!(table.segments().len(), table.len());
     }
 
     #[test]
