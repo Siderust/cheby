@@ -28,9 +28,9 @@
 pub fn nodes<const N: usize>() -> [f64; N] {
     let mut out = [0.0_f64; N];
     let n = N as f64;
-    for k in 0..N {
+    for (k, x) in out.iter_mut().enumerate() {
         let arg = std::f64::consts::PI * (2.0 * k as f64 + 1.0) / (2.0 * n);
-        out[k] = arg.cos();
+        *x = arg.cos();
     }
     out
 }
@@ -52,8 +52,8 @@ pub fn nodes_mapped<const N: usize>(start: f64, end: f64) -> [f64; N] {
     let half = 0.5 * (end - start);
     let unit = nodes::<N>();
     let mut out = [0.0_f64; N];
-    for k in 0..N {
-        out[k] = mid + half * unit[k];
+    for (x, &u) in out.iter_mut().zip(unit.iter()) {
+        *x = mid + half * u;
     }
     out
 }
@@ -90,7 +90,10 @@ mod tests {
     fn test_nodes_mapped_range() {
         let t: [f64; 9] = nodes_mapped(10.0, 20.0);
         for &x in &t {
-            assert!(x >= 10.0 && x <= 20.0, "mapped node {x} out of [10, 20]");
+            assert!(
+                (10.0..=20.0).contains(&x),
+                "mapped node {x} out of [10, 20]"
+            );
         }
     }
 
