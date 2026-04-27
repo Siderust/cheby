@@ -132,23 +132,19 @@ mod tests {
 
     #[test]
     fn test_fit_quantity_type() {
-        use qtty::Quantity;
-        type Km = qtty::Kilometer;
-        type Kilometers = Quantity<Km>;
+        use qtty::Kilometer;
 
         let xi: [f64; 9] = crate::nodes();
-        let values: [Kilometers; 9] =
-            std::array::from_fn(|k| Kilometers::new(xi[k].sin() * 1000.0));
+        let values: [Kilometer; 9] =
+            std::array::from_fn(|k| Kilometer::new(xi[k].sin() * 1000.0));
         let coeffs = fit_coeffs(&values);
-        // Evaluate and compare
         let val = evaluate(&coeffs, 0.0);
         let f64_vals: [f64; 9] = std::array::from_fn(|k| xi[k].sin() * 1000.0);
         let f64_coeffs = fit_coeffs(&f64_vals);
         let f64_val = evaluate(&f64_coeffs, 0.0);
         assert!(
-            (val.value() - f64_val).abs() < 1e-10,
-            "quantity val = {}, f64 val = {f64_val}",
-            val.value()
+            (val - Kilometer::new(f64_val)).abs() < Kilometer::new(1e-10),
+            "quantity val = {val}, f64 val = {f64_val}"
         );
     }
 }
