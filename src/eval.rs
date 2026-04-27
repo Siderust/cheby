@@ -172,20 +172,17 @@ mod tests {
 
     #[test]
     fn test_quantity_type() {
-        use qtty::Quantity;
-        type Km = qtty::Kilometer;
-        type Kilometers = Quantity<Km>;
+        use qtty::Kilometer;
 
-        let coeffs: [Kilometers; 3] = [
-            Kilometers::new(100.0),
-            Kilometers::new(50.0),
-            Kilometers::new(10.0),
+        let coeffs: [Kilometer; 3] = [
+            Kilometer::new(100.0),
+            Kilometer::new(50.0),
+            Kilometer::new(10.0),
         ];
         let tau = 0.5;
         let val = evaluate(&coeffs, tau);
-        // Compare with f64 evaluation
         let f64_coeffs = [100.0, 50.0, 10.0];
         let f64_val = evaluate(&f64_coeffs, tau);
-        assert!((val.value() - f64_val).abs() < 1e-12);
+        assert!((val - Kilometer::new(f64_val)).abs() < Kilometer::new(1e-12));
     }
 }
