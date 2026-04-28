@@ -68,6 +68,22 @@ pub fn fit_from_fn<T: ChebyScalar, const N: usize>(
     fit_coeffs(&values)
 }
 
+/// Sample a function at `N` Chebyshev nodes on `[start, end]` and fit
+/// Chebyshev coefficients. Generic over the time domain type `Tt`.
+///
+/// This variant accepts typed time values (e.g., `Quantity<Second>`),
+/// removing the need to call `.value()` at call sites.
+#[inline]
+pub fn fit_from_fn_t<T: ChebyScalar, Tt: crate::scalar::ChebyTime, const N: usize>(
+    f: &impl Fn(Tt) -> T,
+    start: Tt,
+    end: Tt,
+) -> [T; N] {
+    let mapped: [Tt; N] = nodes::nodes_mapped_t(start, end);
+    let values: [T; N] = std::array::from_fn(|k| f(mapped[k]));
+    fit_coeffs(&values)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

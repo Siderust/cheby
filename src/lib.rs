@@ -29,7 +29,7 @@ pub mod scalar;
 pub mod segment;
 
 pub use eval::{evaluate, evaluate_both, evaluate_derivative};
-pub use fit::{fit_coeffs, fit_from_fn};
-pub use nodes::{nodes, nodes_mapped};
-pub use scalar::ChebyScalar;
-pub use segment::{ChebySegment, ChebySegmentTable};
+pub use fit::{fit_coeffs, fit_from_fn, fit_from_fn_t};
+pub use nodes::{nodes, nodes_mapped, nodes_mapped_t};
+pub use scalar::{ChebyScalar, ChebyTime};
+pub use segment::{ChebySegment, ChebySegmentF, ChebySegmentTable, ChebySegmentTableF};

@@ -70,8 +70,8 @@ fn segment_table_end_to_end() {
     let start = 0.0;
     let end = 6.0;
     let segment_len = 1.5;
-    let table: ChebySegmentTable<f64, N> =
-        ChebySegmentTable::from_fn(|t| 0.5 * t.cos() + 2.0, start, end, segment_len);
+    let table: ChebySegmentTable<f64, f64, N> =
+        ChebySegmentTable::from_fn(|t: f64| 0.5 * t.cos() + 2.0, start, end, segment_len);
 
     assert_eq!(table.len(), 4);
     assert!(!table.is_empty());
@@ -80,7 +80,7 @@ fn segment_table_end_to_end() {
     assert_abs_diff_eq!(table.segment_len(), segment_len, epsilon = 0.0);
     assert_eq!(table.segments().len(), table.len());
 
-    for &t in &[0.1, 1.0, 2.1, 3.2, 4.7, 5.9] {
+    for &t in &[0.1_f64, 1.0, 2.1, 3.2, 4.7, 5.9] {
         let approx = table.eval(t).expect("in range");
         let exact = 0.5 * t.cos() + 2.0;
         assert_abs_diff_eq!(approx, exact, epsilon = 1e-9);
@@ -98,7 +98,7 @@ fn segment_table_from_precomputed_segments_and_empty_case() {
     let segment_len = 2.0;
     let half = segment_len / 2.0;
 
-    let mk = |seg_start: f64| -> ChebySegment<f64, N> {
+    let mk = |seg_start: f64| -> ChebySegment<f64, f64, N> {
         let coeffs = fit_from_fn::<f64, N>(|t| t * t + 1.0, seg_start, seg_start + segment_len);
         ChebySegment::new(coeffs, seg_start + half, half)
     };
@@ -112,7 +112,7 @@ fn segment_table_from_precomputed_segments_and_empty_case() {
     let exact = t * t + 1.0;
     assert_abs_diff_eq!(approx, exact, epsilon = 1e-9);
 
-    let empty: ChebySegmentTable<f64, N> = ChebySegmentTable::from_segments(vec![], 10.0, 1.0);
+    let empty: ChebySegmentTable<f64, f64, N> = ChebySegmentTable::from_segments(vec![], 10.0, 1.0);
     assert!(empty.is_empty());
     assert_eq!(empty.len(), 0);
     assert!(empty.get_segment(10.0).is_none());
