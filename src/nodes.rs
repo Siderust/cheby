@@ -58,6 +58,22 @@ pub fn nodes_mapped<const N: usize>(start: f64, end: f64) -> [f64; N] {
     out
 }
 
+/// Compute `N` Chebyshev nodes mapped to the typed interval `[start, end]`.
+///
+/// Each node `ξ_k ∈ [-1, 1]` is mapped to `t_k = mid + half * ξ_k`
+/// where `mid = start + (end - start) * 0.5` and `half = (end - start) * 0.5`.
+/// Works for any `Tt: ChebyTime` including typed time quantities.
+#[inline]
+pub fn nodes_mapped_t<Tt: crate::scalar::ChebyTime, const N: usize>(
+    start: Tt,
+    end: Tt,
+) -> [Tt; N] {
+    let half = (end - start) * 0.5;
+    let mid = start + half;
+    let unit = nodes::<N>();
+    std::array::from_fn(|k| mid + half * unit[k])
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
