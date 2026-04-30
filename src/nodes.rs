@@ -40,6 +40,12 @@ pub fn nodes<const N: usize>() -> [f64; N] {
 /// Each node `ξ_k ∈ [-1, 1]` is mapped to `t_k = mid + half * ξ_k`
 /// where `mid = (start + end) / 2` and `half = (end - start) / 2`.
 ///
+/// This is the standard affine bijection
+/// `[start, end] ↔ [-1, 1]` with inverse
+/// `τ(x) = (2x − (start + end)) / (end − start)`. When you later evaluate
+/// the resulting Chebyshev series, make sure the evaluation point stays in
+/// `[start, end]` — extrapolation diverges exponentially in the degree.
+///
 /// # Example
 ///
 /// ```
@@ -64,10 +70,7 @@ pub fn nodes_mapped<const N: usize>(start: f64, end: f64) -> [f64; N] {
 /// where `mid = start + (end - start) * 0.5` and `half = (end - start) * 0.5`.
 /// Works for any `Tt: ChebyTime` including typed time quantities.
 #[inline]
-pub fn nodes_mapped_t<Tt: crate::scalar::ChebyTime, const N: usize>(
-    start: Tt,
-    end: Tt,
-) -> [Tt; N] {
+pub fn nodes_mapped_t<Tt: crate::scalar::ChebyTime, const N: usize>(start: Tt, end: Tt) -> [Tt; N] {
     let half = (end - start) * 0.5;
     let mid = start + half;
     let unit = nodes::<N>();
