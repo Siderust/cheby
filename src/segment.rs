@@ -48,7 +48,12 @@ impl<T: ChebyScalar, Tt: ChebyTime, const N: usize> ChebySegment<T, Tt, N> {
     #[inline]
     pub fn new(coeffs: [T; N], mid: Tt, half: Tt) -> Self {
         let half_inv = half.recip_f64();
-        Self { coeffs, mid, half, half_inv }
+        Self {
+            coeffs,
+            mid,
+            half,
+            half_inv,
+        }
     }
 
     /// Normalise `t` to `τ ∈ [-1, 1]` within this segment.
@@ -134,12 +139,24 @@ impl<T: ChebyScalar, Tt: ChebyTime, const N: usize> ChebySegmentTable<T, Tt, N> 
             segments.push(ChebySegment::new(coeffs, mid, half));
         }
 
-        Self { start, segment_len, segments }
+        Self {
+            start,
+            segment_len,
+            segments,
+        }
     }
 
     /// Build from pre-computed segments.
-    pub fn from_segments(segments: Vec<ChebySegment<T, Tt, N>>, start: Tt, segment_len: Tt) -> Self {
-        Self { start, segment_len, segments }
+    pub fn from_segments(
+        segments: Vec<ChebySegment<T, Tt, N>>,
+        start: Tt,
+        segment_len: Tt,
+    ) -> Self {
+        Self {
+            start,
+            segment_len,
+            segments,
+        }
     }
 
     /// Number of segments in the table.
