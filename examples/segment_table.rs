@@ -10,7 +10,7 @@ fn main() {
     let f = |t: f64| (0.8 * t).sin();
 
     // Build 4 uniform segments across [0, 8).
-    let table: ChebySegmentTable<f64, 11> = ChebySegmentTable::from_fn(f, 0.0, 8.0, 2.0);
+    let table: ChebySegmentTable<f64, f64, 11> = ChebySegmentTable::from_fn(f, 0.0, 8.0, 2.0);
 
     println!(
         "segments={}, start={}, end={}, segment_len={}",
