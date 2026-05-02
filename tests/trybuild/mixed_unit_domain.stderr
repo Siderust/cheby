@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+ --> tests/trybuild/mixed_unit_domain.rs:2:59
+  |
+2 |     let _ = cheby::Domain::try_new(qtty::Meter::new(0.0), qtty::Second::new(1.0));
+  |             ----------------------                        ^^^^^^^^^^^^^^^^^^^^^^ expected `Quantity<Meter>`, found `Quantity<Second, {float}>`
+  |             |
+  |             arguments to this function are incorrect
+  |
+  = note: expected struct `Quantity<Meter, f64>`
+             found struct `Quantity<Second, {float}>`
+note: associated function defined here
+ --> src/core/domain.rs
+  |
+  |     pub fn try_new(start: X, end: X) -> Result<Self, ChebyError> {
+  |            ^^^^^^^

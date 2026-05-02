@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+  --> tests/trybuild/invalid_integral_assignment.rs:8:30
+   |
+ 8 |       let position: Velocity = series
+   |  ___________________--------___^
+   | |                   |
+   | |                   expected due to this
+ 9 | |         .evaluate_integral_from_start(qtty::Second::new(0.5))
+10 | |         .unwrap();
+   | |_________________^ expected `Quantity<Per<Kilometer, Second>>`, found `Quantity<Kilometer>`
+   |
+   = note: expected struct `Quantity<Per<Kilometer, Second>>`
+              found struct `Quantity<Kilometer>`
