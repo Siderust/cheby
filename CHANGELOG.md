@@ -14,8 +14,13 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   fix to the recurrence only needs to be made in one place.
 - `nodes_mapped` now delegates to `nodes_mapped_t` (valid since `f64: ChebyTime`),
   removing a manual reimplementation of the same affine-map loop.
+- `nodes()` rewritten using `std::array::from_fn` for style consistency with
+  `nodes_mapped_t`.
 - `fit_from_fn` now delegates to `fit_from_fn_t`, removing a manual
   reimplementation of the same sample-and-fit pipeline.
+- `fit_from_fn_t` now takes `f: impl Fn(Tt) -> T` by value (previously
+  `f: &impl Fn(Tt) -> T`). Call sites no longer need to write `&f` or
+  `&|t| ...`.
 - `ChebySegment` fields (`coeffs`, `mid`, `half`, `half_inv`) are no longer
   `pub`. Read accessors `coeffs()`, `mid()`, `half()`, `half_inv()` are
   provided instead. This prevents external code from writing `seg.half`
@@ -26,8 +31,19 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   value type, using `fit_from_fn_t` and `ChebySegment<Kilometer, Second, N>`.
   The derivative output and its implicit `km/s` units are explicitly shown.
 
+### Fixed
+
+- `ChebySegmentTable::from_fn` now panics immediately if `segment_len` is
+  zero or negative. Previously a zero `segment_len` would silently produce
+  `half_inv = ∞`, corrupting all derivative evaluations.
+
 ### Documentation
 
+- `nodes_mapped_t` promoted to carry the canonical, comprehensive doc
+  (affine bijection formula, extrapolation warning). `nodes_mapped` now
+  describes itself as a convenience specialisation.
+- `fit_from_fn_t` promoted to carry the canonical doc. `fit_from_fn` now
+  describes itself as a convenience specialisation for `f64` arguments.
 - `fit_coeffs`: added `# Complexity` section noting the O(N²) cost of the
   naive DCT and recommending an FFT-based approach for N > ~30.
 - `ChebyTime` trait and `recip_f64`: documented the dimension gap — for typed

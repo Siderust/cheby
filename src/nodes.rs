@@ -26,25 +26,19 @@
 /// ```
 #[inline]
 pub fn nodes<const N: usize>() -> [f64; N] {
-    let mut out = [0.0_f64; N];
     let n = N as f64;
-    for (k, x) in out.iter_mut().enumerate() {
-        let arg = std::f64::consts::PI * (2.0 * k as f64 + 1.0) / (2.0 * n);
-        *x = arg.cos();
-    }
-    out
+    std::array::from_fn(|k| (std::f64::consts::PI * (2.0 * k as f64 + 1.0) / (2.0 * n)).cos())
 }
 
 /// Compute `N` Chebyshev nodes mapped to the interval `[start, end]`.
 ///
-/// Each node `ξ_k ∈ [-1, 1]` is mapped to `t_k = mid + half * ξ_k`
+/// Convenience specialisation of [`nodes_mapped_t`] for `f64` arguments.
+/// Each node `ξ_k ∈ [-1, 1]` is mapped to `t_k = mid + half · ξ_k`
 /// where `mid = (start + end) / 2` and `half = (end - start) / 2`.
 ///
-/// This is the standard affine bijection
-/// `[start, end] ↔ [-1, 1]` with inverse
-/// `τ(x) = (2x − (start + end)) / (end − start)`. When you later evaluate
-/// the resulting Chebyshev series, make sure the evaluation point stays in
-/// `[start, end]` — extrapolation diverges exponentially in the degree.
+/// When you later evaluate the resulting Chebyshev series, make sure the
+/// evaluation point stays in `[start, end]` — extrapolation diverges
+/// exponentially in the degree.
 ///
 /// # Example
 ///
@@ -59,9 +53,20 @@ pub fn nodes_mapped<const N: usize>(start: f64, end: f64) -> [f64; N] {
 
 /// Compute `N` Chebyshev nodes mapped to the typed interval `[start, end]`.
 ///
-/// Each node `ξ_k ∈ [-1, 1]` is mapped to `t_k = mid + half * ξ_k`
-/// where `mid = start + (end - start) * 0.5` and `half = (end - start) * 0.5`.
-/// Works for any `Tt: ChebyTime` including typed time quantities.
+/// Each node `ξ_k ∈ [-1, 1]` is mapped via the standard affine bijection
+///
+/// ```text
+/// t_k = mid + half · ξ_k,   mid = start + half,   half = (end − start) / 2
+/// ```
+///
+/// with inverse `τ(x) = (x − mid) / half ∈ [-1, 1]`.
+///
+/// Works for any `Tt: ChebyTime`, including raw `f64` and typed time
+/// quantities such as `Quantity<Second>`. When you later evaluate the
+/// resulting Chebyshev series, make sure the evaluation point stays in
+/// `[start, end]` — extrapolation diverges exponentially in the degree.
+///
+/// For `f64` arguments prefer the [`nodes_mapped`] convenience wrapper.
 #[inline]
 pub fn nodes_mapped_t<Tt: crate::scalar::ChebyTime, const N: usize>(start: Tt, end: Tt) -> [Tt; N] {
     let half = (end - start) * 0.5;
