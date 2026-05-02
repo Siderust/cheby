@@ -9,50 +9,85 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Changed
 
-- `evaluate_derivative` now delegates to `evaluate_both`, eliminating a
-  duplicate Clenshaw recurrence loop. Behaviour is identical; any future
-  fix to the recurrence only needs to be made in one place.
-- `nodes_mapped` now delegates to `nodes_mapped_t` (valid since `f64: ChebyTime`),
-  removing a manual reimplementation of the same affine-map loop.
-- `nodes()` rewritten using `std::array::from_fn` for style consistency with
-  `nodes_mapped_t`.
-- `fit_from_fn` now delegates to `fit_from_fn_t`, removing a manual
-  reimplementation of the same sample-and-fit pipeline.
-- `fit_from_fn_t` now takes `f: impl Fn(Tt) -> T` by value (previously
-  `f: &impl Fn(Tt) -> T`). Call sites no longer need to write `&f` or
-  `&|t| ...`.
-- `ChebySegment` fields (`coeffs`, `mid`, `half`, `half_inv`) are no longer
-  `pub`. Read accessors `coeffs()`, `mid()`, `half()`, `half_inv()` are
-  provided instead. This prevents external code from writing `seg.half`
-  without updating the precomputed `half_inv`, which would silently corrupt
-  derivative results.
-- `examples/typed_quantities.rs` rewritten to demonstrate the full
-  typed-quantity pipeline: `Second` as the time type and `Kilometer` as the
-  value type, using `fit_from_fn_t` and `ChebySegment<Kilometer, Second, N>`.
-  The derivative output and its implicit `km/s` units are explicitly shown.
+- The crate has been refactored from a flat source layout into feature-gated
+  mathematical modules under `core`, `approx`, `calculus`, `piecewise`,
+  `quadrature`, `spectral`, and `io`.
+- The public positioning of the crate now centers on unit-safe Chebyshev
+  approximation, interpolation, and spectral numerics. Public domain-specific
+  APIs for trajectory or ephemeris-style use remain out of scope.
+- `Cargo.toml` now exposes modular feature flags:
+  `std`, `alloc`, `approx`, `adaptive`, `minimax`, `calculus`, `piecewise`,
+  `quadrature`, `spectral`, `serde`, `binary`, `fast-dct`, and `full`.
+- The README, examples, benchmarks, and CI configuration were rewritten to
+  match the new crate architecture and release posture.
+
+### Added
+
+- `#![forbid(unsafe_code)]` at the crate root.
+- Core abstractions:
+  `Domain<X>`, `ChebyError`, `ChebySeries<T, N>`, `ChebySeriesDyn<T>`,
+  `ChebySeriesOn<T, X, N>`, `ChebyScalar`, `ChebyTime`,
+  `DifferentiateWith<X>`, and `IntegrateWith<X>`.
+- Chebyshev basis functions in `core::basis`:
+  `t(n, x)` and `u(n, x)`.
+- First-class node families in `core::nodes`:
+  `Roots`, `Extrema`, `Lobatto`, `Gauss`, and `GaussLobatto`.
+- Stable Clenshaw evaluation in `core::eval`:
+  `evaluate`, `evaluate_both`, and the compatibility `evaluate_derivative`.
+- Approximation APIs in `approx`:
+  coefficient fitting, function fitting on normalized and typed domains,
+  barycentric interpolation, adaptive fitting with `FitReport`, coefficient-tail
+  error estimates, and a Remez-style minimax interface.
+- Calculus APIs for normalized derivatives and domain-aware definite integrals.
+- Piecewise APIs:
+  `ChebySegment`, `ChebySegmentTable`, uniform O(1) lookup, and adaptive
+  segment-table construction with per-segment metadata.
+- Quadrature APIs:
+  Clenshaw-Curtis style weights and integration, plus Gauss-Chebyshev weighted
+  integration.
+- Spectral APIs:
+  collocation points, a lightweight dense `Matrix`, and Chebyshev
+  differentiation matrices.
+- Optional IO support:
+  serde-backed public type serialization, binary encoding helpers for dynamic
+  `f64` series, and explicit table-format metadata.
+- Property tests with `proptest` covering domain normalization, recurrence,
+  interpolation reproduction, series derivative/integral consistency,
+  piecewise lookup, and adaptive fitting.
+- Compile-fail tests with `trybuild` covering mixed-unit domains and invalid
+  derivative/integral assignments under `qtty`.
+- New examples:
+  `basic_series`, `fit_sin`, `adaptive_fit`, `minimax_exp`,
+  `derivative_velocity`, `integral_position`, `piecewise_trajectory`,
+  `ephemeris_like_table`, `angular_rate`, `star_alt_az_approximation`,
+  `clenshaw_curtis_integral`, and `spectral_differentiation`.
+- Criterion benchmarks for evaluation, derivative evaluation, fitting,
+  piecewise lookup/evaluation, adaptive fitting, and Clenshaw-Curtis
+  integration.
+- Release-hardening files:
+  `.github/workflows/ci.yml` and `deny.toml`.
 
 ### Fixed
 
-- `ChebySegmentTable::from_fn` now panics immediately if `segment_len` is
-  zero or negative. Previously a zero `segment_len` would silently produce
-  `half_inv = ∞`, corrupting all derivative evaluations.
+- Domain-aware derivatives are now dimensionally correct with `qtty`. A series
+  over `Second` returning `Kilometer` now differentiates to
+  `Kilometer / Second` instead of returning `Kilometer` with only a
+  documentation caveat.
+- Domain-aware integrals are now dimensionally correct with `qtty`. A series
+  returning velocity-like quantities now integrates over time to a
+  position-like quantity.
+- Out-of-domain evaluation now consistently reports `ChebyError::EvaluationOutOfDomain`
+  through fallible APIs instead of relying on implicit caller discipline.
+- Segment-table construction now validates empty tables, segment lengths, and
+  uniformity assumptions through typed errors.
 
 ### Documentation
 
-- `nodes_mapped_t` promoted to carry the canonical, comprehensive doc
-  (affine bijection formula, extrapolation warning). `nodes_mapped` now
-  describes itself as a convenience specialisation.
-- `fit_from_fn_t` promoted to carry the canonical doc. `fit_from_fn` now
-  describes itself as a convenience specialisation for `f64` arguments.
-- `fit_coeffs`: added `# Complexity` section noting the O(N²) cost of the
-  naive DCT and recommending an FFT-based approach for N > ~30.
-- `ChebyTime` trait and `recip_f64`: documented the dimension gap — for typed
-  time `Quantity<U>`, `recip_f64` returns a raw `f64` that is dimensionally
-  `1/[U]`, so the Rust return type of `eval_derivative` / `eval_both` is `T`
-  while the physical units are `[T]/[Tt]`. The caller must know the time-unit
-  context when interpreting derivative results.
-- `ChebySegment::eval_derivative` and `eval_both`: carry the same derivative
-  units caveat inline.
+- The crate README now describes `cheby` as a unit-safe Chebyshev mathematics
+  crate, documents the feature flags, and explicitly keeps application-domain
+  use cases in examples or downstream crates.
+- The changelog, examples, and CI docs now align with the refactored crate and
+  the new dimensional-calculus behavior.
 
 ## [0.1.0 - 2026/02/12]
 
