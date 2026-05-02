@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+ --> tests/trybuild/invalid_derivative_assignment.rs:7:37
+  |
+7 |       let velocity: qtty::Kilometer = series
+  |  ___________________---------------___^
+  | |                   |
+  | |                   expected due to this
+8 | |         .evaluate_derivative(qtty::Second::new(0.5))
+9 | |         .unwrap();
+  | |_________________^ expected `Quantity<Kilometer>`, found `Quantity<Per<Kilometer, Second>>`
+  |
+  = note: expected struct `Quantity<Kilometer>`
+             found struct `Quantity<Per<Kilometer, Second>>`

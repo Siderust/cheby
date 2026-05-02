@@ -1,82 +1,109 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Vallés Puig, Ramon
 
-//! Chebyshev polynomial toolkit: node generation, coefficient fitting, and
-//! Clenshaw evaluation — generic over scalar type.
-//!
-//! # Overview
-//!
-//! This crate provides the full pipeline for piecewise Chebyshev
-//! interpolation, as used in JPL DE-series ephemerides and cached
-//! lunar/planetary position evaluators:
-//!
-//! 1. **[`nodes`]** — Chebyshev node generation on `[-1, 1]` or mapped to
-//!    an arbitrary interval.
-//! 2. **[`fit`]** — DCT-based coefficient computation from function values
-//!    at Chebyshev nodes.
-//! 3. **[`eval`]** — Clenshaw-recurrence evaluation of a Chebyshev series
-//!    (value, derivative, or both in one pass).
-//! 4. **[`segment`]** — Piecewise Chebyshev approximation over uniform time
-//!    segments, with automatic lookup and `t → τ` normalisation.
-//!
-//! All core functions are generic over [`ChebyScalar`], so they work with
-//! raw `f64` as well as typed quantities (`qtty::Quantity<U>`).
-//!
-//! # Numerical properties
-//!
-//! Chebyshev expansions are popular precisely because they are well-behaved
-//! both in terms of *approximation power* and *floating-point conditioning*.
-//! A few facts worth keeping in mind when using this crate:
-//!
-//! - **Exponential coefficient decay (analytic functions).**
-//!   If `f` is analytic on `[-1, 1]` and admits an analytic continuation to
-//!   the Bernstein ellipse `E_ρ` (foci ±1, semi-axis sum `ρ > 1`), then its
-//!   Chebyshev coefficients satisfy `|a_n| ≤ M · ρ^{-n}` for some constant
-//!   `M`. In practice this means coefficients fall off geometrically and
-//!   the truncation error after keeping `N` of them is dominated by the
-//!   first dropped term:
-//!
-//!   ```text
-//!   |f(x) − Σ_{k=0}^{N-1} a_k T_k(x)|  ≲  Σ_{k≥N} |a_k|  ≈  |a_N|.
-//!   ```
-//!
-//!   So a quick "did I keep enough terms?" check is to look at the magnitude
-//!   of the last few coefficients returned by [`fit_coeffs`] / [`fit_from_fn`]:
-//!   when they are at the level of `≈ ε · ‖f‖`, the series is converged.
-//!
-//! - **Clenshaw evaluation.** The [`eval`] module uses the Clenshaw
-//!   recurrence rather than evaluating `Σ a_k T_k(x)` directly. This is
-//!   numerically more stable for high degrees because it never forms the
-//!   ill-conditioned monomial basis and the recurrence is a normwise stable
-//!   way to sum a Chebyshev series. See [`evaluate`] for details.
-//!
-//! - **Domain rescaling.** Working on a general interval `[a, b]` is done
-//!   via the standard affine map
-//!
-//!   ```text
-//!   τ(x) = (2x − (a + b)) / (b − a),     τ ∈ [-1, 1].
-//!   ```
-//!
-//!   The [`nodes_mapped`] / [`fit_from_fn`] / [`segment`] APIs apply this
-//!   automatically. The caller is responsible for evaluating only at points
-//!   `x ∈ [a, b]`: outside this interval `T_k(τ)` grows like
-//!   `cosh(k · acosh|τ|)`, so extrapolation diverges *very* fast — this is
-//!   not a polite "extrapolation is less accurate" warning, it is essentially
-//!   exponential blow-up in the degree.
-//!
-//! - **Conditioning across `[-1, 1]`.** Evaluation is well-conditioned in
-//!   the interior and slightly less so near the endpoints `τ = ±1`, but for
-//!   typical engineering degrees (a few tens) the condition number stays
-//!   modest and Clenshaw remains accurate to nearly machine precision.
+#![forbid(unsafe_code)]
+#![cfg_attr(not(feature = "std"), no_std)]
+#![doc = include_str!("../README.md")]
 
-mod eval;
-mod fit;
-mod nodes;
-pub mod scalar;
-pub mod segment;
+#[cfg(feature = "alloc")]
+extern crate alloc;
 
-pub use eval::{evaluate, evaluate_both, evaluate_derivative};
-pub use fit::{fit_coeffs, fit_from_fn, fit_from_fn_t};
-pub use nodes::{nodes, nodes_mapped, nodes_mapped_t};
-pub use scalar::{ChebyScalar, ChebyTime};
-pub use segment::{ChebySegment, ChebySegmentF, ChebySegmentTable, ChebySegmentTableF};
+pub mod core;
+
+#[cfg(feature = "approx")]
+pub mod approx;
+#[cfg(feature = "calculus")]
+pub mod calculus;
+#[cfg(any(feature = "serde", feature = "binary"))]
+pub mod io;
+#[cfg(feature = "piecewise")]
+pub mod piecewise;
+#[cfg(feature = "quadrature")]
+pub mod quadrature;
+#[cfg(feature = "spectral")]
+pub mod spectral;
+
+pub use core::{
+    basis, evaluate, evaluate_both, ChebyError, ChebyScalar, ChebySeries, ChebySeriesOn, ChebyTime,
+    Domain, NodeKind,
+};
+
+#[cfg(feature = "alloc")]
+pub use core::ChebySeriesDyn;
+
+#[cfg(feature = "approx")]
+pub use approx::fit::fit_coeffs;
+
+#[cfg(feature = "piecewise")]
+pub use piecewise::{ChebySegment, ChebySegmentTable};
+
+/// Backward-compatible normalized derivative evaluation.
+///
+/// This returns `df/dtau`, where `tau` is the normalized coordinate in
+/// `[-1, 1]`. Domain-aware derivatives with physical units are available on
+/// [`ChebySeriesOn`] and [`piecewise::ChebySegment`].
+#[inline]
+pub fn evaluate_derivative<T: ChebyScalar>(coeffs: &[T], tau: f64) -> T {
+    core::eval::evaluate_derivative(coeffs, tau)
+}
+
+/// Backward-compatible root helper for roots of `T_N` on `[-1, 1]`.
+#[inline]
+pub fn chebyshev_roots<const N: usize>() -> [f64; N] {
+    core::nodes::nodes(NodeKind::Roots)
+}
+
+/// Backward-compatible root-node helper.
+#[inline]
+pub fn nodes<const N: usize>() -> [f64; N] {
+    core::nodes::nodes(NodeKind::Roots)
+}
+
+/// Backward-compatible mapped root-node helper.
+#[inline]
+pub fn nodes_mapped<const N: usize>(start: f64, end: f64) -> [f64; N] {
+    let domain = Domain::new(start, end);
+    core::nodes::nodes_mapped(domain, NodeKind::Roots)
+}
+
+/// Backward-compatible mapped roots helper.
+#[inline]
+pub fn nodes_mapped_interval<const N: usize>(start: f64, end: f64) -> [f64; N] {
+    let domain = Domain::new(start, end);
+    core::nodes::nodes_mapped(domain, NodeKind::Roots)
+}
+
+/// Backward-compatible typed mapped roots helper.
+#[inline]
+pub fn nodes_mapped_t<Tt: ChebyTime, const N: usize>(start: Tt, end: Tt) -> [Tt; N] {
+    let domain = Domain::new(start, end);
+    core::nodes::nodes_mapped(domain, NodeKind::Roots)
+}
+
+/// Backward-compatible root-node name.
+#[inline]
+pub fn nodes_roots<const N: usize>() -> [f64; N] {
+    core::nodes::nodes(NodeKind::Roots)
+}
+
+/// Backward-compatible fitting helper returning raw coefficients.
+#[cfg(feature = "approx")]
+#[inline]
+pub fn fit_from_fn<T: ChebyScalar, const N: usize>(
+    f: impl Fn(f64) -> T,
+    start: f64,
+    end: f64,
+) -> [T; N] {
+    approx::fit::fit_from_fn_on(Domain::new(start, end), f).into_coeffs()
+}
+
+/// Backward-compatible typed fitting helper returning raw coefficients.
+#[cfg(feature = "approx")]
+#[inline]
+pub fn fit_from_fn_t<T: ChebyScalar, X: ChebyTime, const N: usize>(
+    f: impl Fn(X) -> T,
+    start: X,
+    end: X,
+) -> [T; N] {
+    approx::fit::fit_from_fn_on(Domain::new(start, end), f).into_coeffs()
+}
