@@ -53,6 +53,12 @@ use crate::scalar::ChebyScalar;
 /// `values[k]` must correspond to the function evaluated at the `k`-th
 /// node returned by [`nodes::<N>()`](crate::nodes).
 ///
+/// # Complexity
+///
+/// O(N²) multiplications. For the typical degrees used in ephemeris work
+/// (N ≤ 30) this is negligible. For significantly larger N an FFT-based
+/// DCT (O(N log N)) would be needed.
+///
 /// # Example
 ///
 /// ```
@@ -95,9 +101,7 @@ pub fn fit_from_fn<T: ChebyScalar, const N: usize>(
     start: f64,
     end: f64,
 ) -> [T; N] {
-    let mapped: [f64; N] = nodes::nodes_mapped(start, end);
-    let values: [T; N] = std::array::from_fn(|k| f(mapped[k]));
-    fit_coeffs(&values)
+    fit_from_fn_t(&f, start, end)
 }
 
 /// Sample a function at `N` Chebyshev nodes on `[start, end]` and fit

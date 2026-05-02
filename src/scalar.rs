@@ -62,6 +62,17 @@ where
 /// `τ = (t − mid) / half_width`.  For `Quantity<U>`, this division naturally
 /// cancels the unit and returns a dimensionless `f64` via qtty's `UnitDiv`
 /// machinery — no extraction required.
+///
+/// # Derivative units
+///
+/// When a [`ChebySegment`](crate::segment::ChebySegment) computes a derivative
+/// via `eval_derivative` or `eval_both`, it multiplies the dimensionless
+/// `df/dτ` result by the `half_inv` chain-rule factor returned by
+/// [`recip_f64`](ChebyTime::recip_f64).  Because `half_inv` is stored as a raw
+/// `f64`, the Rust type of the derivative output is `T` — the **same** type as
+/// the value.  However the *physical* units are `[T] / [Tt]` (e.g.
+/// `Kilometer / Second`).  The caller is responsible for knowing the time unit
+/// context when interpreting derivative results.
 pub trait ChebyTime:
     Copy
     + std::ops::Add<Output = Self>
@@ -79,6 +90,14 @@ pub trait ChebyTime:
     /// Used at segment construction time to precompute the derivative
     /// chain-rule factor `dτ/dt = 1/half`. The hot evaluation path uses
     /// the stored `f64`.
+    ///
+    /// # Dimension note
+    ///
+    /// For a typed time `Quantity<U>`, the returned `f64` is dimensionally
+    /// `1 / [U]` (e.g. `s⁻¹`), but the Rust type is `f64`.  This means
+    /// the derivative output from `eval_derivative` has Rust type `T` while
+    /// carrying implicit physical units `[T] / [Tt]`.  The type system cannot
+    /// enforce this — the caller must know the time unit context.
     fn recip_f64(self) -> f64;
 }
 

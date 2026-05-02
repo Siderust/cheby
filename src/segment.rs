@@ -29,16 +29,16 @@ use crate::scalar::{ChebyScalar, ChebyTime};
 #[derive(Debug, Clone)]
 pub struct ChebySegment<T: ChebyScalar, Tt: ChebyTime, const N: usize> {
     /// Chebyshev coefficients `c[0..N]`.
-    pub coeffs: [T; N],
+    coeffs: [T; N],
     /// Midpoint of the segment domain.
-    pub mid: Tt,
+    mid: Tt,
     /// Half-width of the segment domain.
-    pub half: Tt,
+    half: Tt,
     /// Reciprocal of `half` as a raw `f64`, used for derivative chain-rule scaling.
     ///
     /// Stored so that `df/dt = (df/dτ) * half_inv` without needing to extract
     /// the value from `half` at evaluation time.
-    pub half_inv: f64,
+    half_inv: f64,
 }
 
 impl<T: ChebyScalar, Tt: ChebyTime, const N: usize> ChebySegment<T, Tt, N> {
@@ -54,6 +54,30 @@ impl<T: ChebyScalar, Tt: ChebyTime, const N: usize> ChebySegment<T, Tt, N> {
             half,
             half_inv,
         }
+    }
+
+    /// The Chebyshev coefficients `c[0..N]`.
+    #[inline]
+    pub fn coeffs(&self) -> &[T; N] {
+        &self.coeffs
+    }
+
+    /// Midpoint of the segment domain.
+    #[inline]
+    pub fn mid(&self) -> Tt {
+        self.mid
+    }
+
+    /// Half-width of the segment domain.
+    #[inline]
+    pub fn half(&self) -> Tt {
+        self.half
+    }
+
+    /// Reciprocal of `half` as a raw `f64` (precomputed chain-rule factor).
+    #[inline]
+    pub fn half_inv(&self) -> f64 {
+        self.half_inv
     }
 
     /// Normalise `t` to `τ ∈ [-1, 1]` within this segment.
@@ -74,12 +98,23 @@ impl<T: ChebyScalar, Tt: ChebyTime, const N: usize> ChebySegment<T, Tt, N> {
     /// Evaluate the derivative `df/dt` at physical time `t`.
     ///
     /// Accounts for the chain rule: `df/dt = (df/dτ) · (dτ/dt) = (df/dτ) · half_inv`.
+    ///
+    /// # Dimension note
+    ///
+    /// The Rust return type is `T`, but the physical units are `[T] / [Tt]`
+    /// (e.g. `Kilometer / Second` when `T = Kilometer` and `Tt = Second`).
+    /// This is an accepted limitation: expressing `T/Tt` as a return type
+    /// would require type-level unit division.  The caller must know the
+    /// time unit context when interpreting the result.
     #[inline]
     pub fn eval_derivative(&self, t: Tt) -> T {
         eval::evaluate_derivative(&self.coeffs, self.normalise(t)) * self.half_inv
     }
 
     /// Evaluate both value and derivative `(f(t), df/dt)` in one pass.
+    ///
+    /// The derivative component carries the same caveat as [`eval_derivative`](Self::eval_derivative):
+    /// its Rust type is `T` but its physical units are `[T] / [Tt]`.
     #[inline]
     pub fn eval_both(&self, t: Tt) -> (T, T) {
         let tau = self.normalise(t);

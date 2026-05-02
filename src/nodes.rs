@@ -54,14 +54,7 @@ pub fn nodes<const N: usize>() -> [f64; N] {
 /// ```
 #[inline]
 pub fn nodes_mapped<const N: usize>(start: f64, end: f64) -> [f64; N] {
-    let mid = 0.5 * (start + end);
-    let half = 0.5 * (end - start);
-    let unit = nodes::<N>();
-    let mut out = [0.0_f64; N];
-    for (x, &u) in out.iter_mut().zip(unit.iter()) {
-        *x = mid + half * u;
-    }
-    out
+    nodes_mapped_t(start, end)
 }
 
 /// Compute `N` Chebyshev nodes mapped to the typed interval `[start, end]`.
