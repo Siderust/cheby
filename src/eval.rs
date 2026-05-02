@@ -128,33 +128,10 @@ pub fn evaluate<T: ChebyScalar>(coeffs: &[T], tau: f64) -> T {
 /// argument `tau`. To get `df/dt` in physical time units, multiply by
 /// `dtau/dt = 1/half_width`.
 ///
-/// Uses the modified Clenshaw recurrence that tracks both value and
-/// derivative simultaneously.
+/// Delegates to [`evaluate_both`] and discards the value component.
 #[inline]
 pub fn evaluate_derivative<T: ChebyScalar>(coeffs: &[T], tau: f64) -> T {
-    let n = coeffs.len();
-    if n <= 1 {
-        return T::zero();
-    }
-
-    let two_tau = 2.0 * tau;
-    let mut b_kp1 = T::zero();
-    let mut b_kp2 = T::zero();
-    let mut db_kp1 = T::zero();
-    let mut db_kp2 = T::zero();
-
-    for k in (1..n).rev() {
-        let b_k = b_kp1 * two_tau - b_kp2 + coeffs[k];
-        let db_k = db_kp1 * two_tau - db_kp2 + b_kp1 * 2.0;
-        b_kp2 = b_kp1;
-        b_kp1 = b_k;
-        db_kp2 = db_kp1;
-        db_kp1 = db_k;
-    }
-
-    // derivative of (c[0] + tau*b_1 - b_2) w.r.t. tau
-    // = b_1 + tau*db_1 - db_2
-    b_kp1 + db_kp1 * tau - db_kp2
+    evaluate_both(coeffs, tau).1
 }
 
 /// Evaluate both the Chebyshev polynomial and its derivative in one pass.
