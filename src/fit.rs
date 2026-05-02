@@ -86,8 +86,7 @@ pub fn fit_coeffs<T: ChebyScalar, const N: usize>(values: &[T; N]) -> [T; N] {
 /// Sample a function at `N` Chebyshev nodes on `[start, end]` and fit
 /// Chebyshev coefficients.
 ///
-/// This is a convenience wrapper combining [`nodes_mapped`](crate::nodes_mapped),
-/// function sampling, and [`fit_coeffs`].
+/// Convenience specialisation of [`fit_from_fn_t`] for `f64` time arguments.
 ///
 /// # Example
 ///
@@ -101,17 +100,21 @@ pub fn fit_from_fn<T: ChebyScalar, const N: usize>(
     start: f64,
     end: f64,
 ) -> [T; N] {
-    fit_from_fn_t(&f, start, end)
+    fit_from_fn_t(f, start, end)
 }
 
 /// Sample a function at `N` Chebyshev nodes on `[start, end]` and fit
 /// Chebyshev coefficients. Generic over the time domain type `Tt`.
 ///
-/// This variant accepts typed time values (e.g., `Quantity<Second>`),
-/// removing the need to call `.value()` at call sites.
+/// Samples `f` at the `N` Chebyshev nodes on `[start, end]` produced by
+/// [`nodes_mapped_t`](crate::nodes_mapped_t), then calls [`fit_coeffs`] on
+/// the resulting values.
+///
+/// Accepts any `Tt: ChebyTime`, including raw `f64` and typed time quantities
+/// such as `Quantity<Second>`. For `f64` arguments prefer [`fit_from_fn`].
 #[inline]
 pub fn fit_from_fn_t<T: ChebyScalar, Tt: crate::scalar::ChebyTime, const N: usize>(
-    f: &impl Fn(Tt) -> T,
+    f: impl Fn(Tt) -> T,
     start: Tt,
     end: Tt,
 ) -> [T; N] {

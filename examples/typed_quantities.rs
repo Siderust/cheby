@@ -28,7 +28,7 @@ fn main() {
     // needed at the call site — but sin/cos require a raw f64, hence the
     // single extraction inside the closure.
     let coeffs: [Kilometer; N] = fit_from_fn_t(
-        &|t: Second| Kilometer::new(7000.0 + 250.0 * t.value().sin()),
+        |t: Second| Kilometer::new(7000.0 + 250.0 * t.value().sin()),
         start,
         end,
     );

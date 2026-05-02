@@ -161,6 +161,10 @@ impl<T: ChebyScalar, Tt: ChebyTime, const N: usize> ChebySegmentTable<T, Tt, N> 
     /// - `end` — end of the domain.
     /// - `segment_len` — duration of each segment.
     pub fn from_fn(f: impl Fn(Tt) -> T, start: Tt, end: Tt, segment_len: Tt) -> Self {
+        assert!(
+            segment_len > Tt::zero(),
+            "segment_len must be positive (got a zero or negative value)"
+        );
         let span_f64 = (end - start) / segment_len;
         let num_segments = (span_f64.ceil() as usize).max(1);
         let half = segment_len * 0.5;
@@ -401,7 +405,7 @@ mod tests {
         let mid = Second::new(std::f64::consts::PI / 2.0);
         let half = Second::new(std::f64::consts::PI / 2.0);
 
-        let coeffs: [f64; 15] = fit::fit_from_fn_t(&|t: Second| t.value().sin(), start, end);
+        let coeffs: [f64; 15] = fit::fit_from_fn_t(|t: Second| t.value().sin(), start, end);
         let seg: ChebySegment<f64, Second, 15> = ChebySegment::new(coeffs, mid, half);
 
         // sin(π/2) = 1
