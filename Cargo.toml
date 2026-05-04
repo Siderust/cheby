@@ -48,7 +48,7 @@ full = [
 ]
 
 [dependencies]
-qtty = { version = "0.6.1", path = "../qtty/qtty", default-features = false, features = ["cross-unit-ops"] }
+qtty = { version = "0.6.1", default-features = false, features = ["cross-unit-ops"] }
 serde = { version = "1.0", optional = true, features = ["derive"] }
 rustfft = { version = "6.2", optional = true }
 
