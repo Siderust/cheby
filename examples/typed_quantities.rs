@@ -6,8 +6,8 @@
 //! - `fit_from_fn_t` to sample a function with a typed time argument.
 //! - `ChebySegment<Kilometer, Second, N>` for evaluation and derivative.
 //!
-//! The derivative result has Rust type `Kilometer` but physically represents
-//! `Kilometer / Second` — the caller must know the time-unit context.
+//! The derivative result has Rust type `Velocity<Kilometer, Second>`, so the
+//! time-unit context is preserved by the type system.
 //!
 //! Run with:
 //! `cargo run --example typed_quantities`
@@ -39,13 +39,13 @@ fn main() {
     for raw_t in [0.5, 1.5, 3.0, 5.5] {
         let t = Second::new(raw_t);
         let (val, dval_dt) = seg.eval_both(t);
-        // dval_dt has Rust type Kilometer, but physically is km/s.
+        // dval_dt has a typed km/s unit.
         let exact_val = Kilometer::new(7000.0 + 250.0 * raw_t.sin());
         let exact_dval = 250.0 * raw_t.cos(); // km/s
         println!(
             "t={raw_t:.2} s: val={val:.6}  (exact {exact_val:.6})  \
              dval/dt={:.6} km/s  (exact {exact_dval:.6} km/s)",
-            dval_dt.value() // extract raw f64: type is Kilometer but units are km/s
+            dval_dt.value()
         );
     }
 }

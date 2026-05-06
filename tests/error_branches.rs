@@ -69,26 +69,33 @@ fn binary_error_branches() {
 
     // Wrong version (recompute checksum so we hit version branch, not checksum).
     let mut v = bytes.clone();
-    v[0] = 99; // version byte
-    // Recompute the FNV-1a checksum the encoder uses.
+    // Use a supported layout with an unsupported version byte.
+    v[0] = 99;
     let payload_len = v.len() - 8;
-    let new_ck = v[..payload_len].iter().fold(0xcbf29ce484222325_u64, |h, b| {
-        (h ^ u64::from(*b)).wrapping_mul(0x100000001b3)
-    });
+    let new_ck = v[..payload_len]
+        .iter()
+        .fold(0xcbf29ce484222325_u64, |h, b| {
+            (h ^ u64::from(*b)).wrapping_mul(0x100000001b3)
+        });
     v[payload_len..].copy_from_slice(&new_ck.to_le_bytes());
     let err = decode_f64_series(&v).unwrap_err();
     assert!(matches!(
         err,
-        ChebyError::UnsupportedFormatVersion { found: _, expected: _ }
+        ChebyError::UnsupportedFormatVersion {
+            found: _,
+            expected: _
+        }
     ));
 
     // Length mismatch: tamper coefficient count, recompute checksum.
     let mut l = bytes;
     l[4..12].copy_from_slice(&999_u64.to_le_bytes());
     let payload_len = l.len() - 8;
-    let new_ck = l[..payload_len].iter().fold(0xcbf29ce484222325_u64, |h, b| {
-        (h ^ u64::from(*b)).wrapping_mul(0x100000001b3)
-    });
+    let new_ck = l[..payload_len]
+        .iter()
+        .fold(0xcbf29ce484222325_u64, |h, b| {
+            (h ^ u64::from(*b)).wrapping_mul(0x100000001b3)
+        });
     l[payload_len..].copy_from_slice(&new_ck.to_le_bytes());
     assert_eq!(
         decode_f64_series(&l).unwrap_err(),

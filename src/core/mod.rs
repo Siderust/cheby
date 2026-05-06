@@ -36,4 +36,4 @@ pub use scalar::{ChebyScalar, ChebyTime, DifferentiateWith, IntegrateWith};
 pub use series::{ChebySeries, ChebySeriesOn};
 
 #[cfg(feature = "alloc")]
-pub use series::ChebySeriesDyn;
+pub use series::{ChebySeriesDyn, ChebySeriesDynOn};

@@ -120,3 +120,25 @@ fn segment_table_from_precomputed_segments_and_empty_case() {
     assert!(empty.eval_derivative(10.0).is_none());
     assert!(empty.eval_both(10.0).is_none());
 }
+
+#[test]
+fn segment_table_reports_actual_end_for_short_final_segment() {
+    const N: usize = 9;
+    let table: ChebySegmentTable<f64, f64, N> =
+        ChebySegmentTable::from_fn(|t: f64| t * t, 0.0, 2.5, 1.0);
+
+    assert_eq!(table.len(), 3);
+    assert_abs_diff_eq!(table.end(), 2.5, epsilon = 0.0);
+    assert!(table.eval(2.49).is_some());
+    assert!(table.eval(2.5).is_none());
+    assert!(table.eval(2.75).is_none());
+}
+
+#[test]
+fn segment_table_rejects_non_uniform_precomputed_segments() {
+    const N: usize = 3;
+    let first = ChebySegment::new([0.0; N], 0.5, 0.5);
+    let too_long_final = ChebySegment::new([0.0; N], 1.75, 0.75);
+    let result = ChebySegmentTable::try_from_segments(vec![first, too_long_final]);
+    assert!(result.is_err());
+}

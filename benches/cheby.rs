@@ -133,6 +133,30 @@ fn clenshaw_curtis_integrate(c: &mut Criterion) {
     });
 }
 
+fn clenshaw_curtis_cached(c: &mut Criterion) {
+    let rule = cheby::quadrature::clenshaw_curtis::ClenshawCurtisRule::<32>::new();
+    c.bench_function("clenshaw_curtis_cached_n32", |b| {
+        b.iter(|| rule.integrate::<f64, f64>(cheby::Domain::new(0.0, 1.0), |x| black_box(x).exp()))
+    });
+}
+
+fn definite_integral_one_shot(c: &mut Criterion) {
+    let domain = cheby::Domain::new(0.0_f64, core::f64::consts::PI);
+    let series = cheby::approx::fit::fit_from_fn_on::<f64, f64, 17>(domain, f64::sin);
+    c.bench_function("definite_integral_one_shot_n17", |b| {
+        b.iter(|| series.evaluate_integral_from_start(black_box(1.5)).unwrap())
+    });
+}
+
+fn definite_integral_cached(c: &mut Criterion) {
+    let domain = cheby::Domain::new(0.0_f64, core::f64::consts::PI);
+    let series = cheby::approx::fit::fit_from_fn_on::<f64, f64, 17>(domain, f64::sin);
+    let cached = series.definite_integral_from_start();
+    c.bench_function("definite_integral_cached_n17", |b| {
+        b.iter(|| cached.evaluate(black_box(1.5)).unwrap())
+    });
+}
+
 fn gauss_chebyshev(c: &mut Criterion) {
     c.bench_function("gauss_chebyshev_weighted_n32", |b| {
         b.iter(|| {
@@ -163,6 +187,9 @@ criterion_group!(
     piecewise_evaluate,
     adaptive_piecewise_lookup,
     clenshaw_curtis_integrate,
+    clenshaw_curtis_cached,
+    definite_integral_one_shot,
+    definite_integral_cached,
     gauss_chebyshev,
     spectral_diff_matrix
 );

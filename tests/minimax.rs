@@ -7,13 +7,7 @@ use cheby::core::{ChebyError, Domain};
 
 #[test]
 fn remez_converges_for_smooth_target() {
-    let result = remez(
-        Domain::new(-1.0, 1.0),
-        7,
-        f64::exp,
-        RemezOptions::default(),
-    )
-    .unwrap();
+    let result = remez(Domain::new(-1.0, 1.0), 7, f64::exp, RemezOptions::default()).unwrap();
     assert!(result.converged);
     assert_eq!(result.alternations.len(), 9); // degree + 2
     assert!(result.max_error < 1e-6);
@@ -23,13 +17,7 @@ fn remez_converges_for_smooth_target() {
 
 #[test]
 fn remez_alternations_are_monotone() {
-    let result = remez(
-        Domain::new(-1.0, 1.0),
-        5,
-        f64::cos,
-        RemezOptions::default(),
-    )
-    .unwrap();
+    let result = remez(Domain::new(-1.0, 1.0), 5, f64::cos, RemezOptions::default()).unwrap();
     for w in result.alternations.windows(2) {
         assert!(w[0] < w[1]);
     }
