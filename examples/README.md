@@ -1,45 +1,90 @@
 # cheby examples
 
-All examples are runnable with `cargo run --example <name>`.
+All examples are runnable with `cargo run --example <name> [--features ...]`.
+Examples whose subsystem requires a Cargo feature have a `required-features`
+entry in `Cargo.toml`; the table at the bottom maps each example to the
+features it needs.
 
-## `basic_interpolation`
+## Core evaluation and fitting
 
-End-to-end interpolation on `[-1, 1]`:
+### `basic_series`
+Build a `ChebySeries` by hand and evaluate it.
 
-- Generate Chebyshev nodes.
-- Sample a function.
-- Fit coefficients.
-- Evaluate and print approximation error.
+### `basic_interpolation`
+End-to-end interpolation on `[-1, 1]`: nodes, sample, fit, evaluate, error.
 
-Run:
+### `fit_sin`
+Fixed-size fit of `sin` over a typed time domain.
 
-```bash
-cargo run --example basic_interpolation
-```
+### `typed_quantities`
+Fit and evaluate while preserving `qtty::Quantity` units.
 
-## `segment_table`
+## Derivatives and integrals (`calculus`)
 
-Piecewise approximation over a physical time range:
+### `derivative_velocity`
+Differentiate a position series to recover a typed velocity.
 
-- Build `ChebySegmentTable`.
-- Inspect metadata (`start`, `end`, segment count, segment length).
-- Evaluate value and derivative in one pass.
+### `integral_position`
+Integrate a velocity series to recover a typed position.
 
-Run:
+## Adaptive and minimax fitting (`adaptive`, `minimax`)
 
-```bash
-cargo run --example segment_table
-```
+### `adaptive_fit`
+Refine a fit until a target tolerance is met (`adaptive` feature).
 
-## `typed_quantities`
+### `minimax_exp`
+Minimise the L∞ error for `exp` using Remez exchange (`minimax` feature).
 
-Demonstrates typed units with `qtty::Quantity`:
+## Piecewise tables (`piecewise`)
 
-- Fit coefficients where values are `Quantity<Kilometer>`.
-- Evaluate while preserving units.
+### `segment_table`
+Uniform piecewise table over a typed domain with metadata.
 
-Run:
+### `piecewise_trajectory`
+A typed multi-segment trajectory with per-segment evaluation.
 
-```bash
-cargo run --example typed_quantities
-```
+### `ephemeris_like_table`
+Builds a piecewise table reminiscent of an ephemeris layout.
+
+## Quadrature (`quadrature`)
+
+### `clenshaw_curtis_integral`
+Clenshaw-Curtis quadrature of `sin` on `[0, π]`.
+
+### `gauss_chebyshev`
+Gauss-Chebyshev recovers `π` and `π·J₀(1)`.
+
+## Spectral differentiation (`spectral`)
+
+### `spectral_differentiation`
+Build the Chebyshev differentiation matrix and verify it against
+`d/dx sin(x) = cos(x)` at the Lobatto nodes.
+
+## Binary I/O (`binary`)
+
+### `binary_roundtrip`
+Encode an `f64` series, decode it, and demonstrate that a flipped byte is
+rejected by the checksum.
+
+## Application-flavoured demos
+
+These illustrate downstream usage and rely on default features only:
+
+### `angular_rate`
+Differentiate an angle series to recover an angular rate.
+
+### `star_alt_az_approximation`
+Toy approximation of an alt/az curve using a piecewise table.
+
+## Feature-to-example map
+
+| Feature       | Examples |
+|---------------|----------|
+| `std` (default) | `basic_series`, `basic_interpolation`, `fit_sin`, `typed_quantities`, `angular_rate` |
+| `calculus` (default) | `derivative_velocity`, `integral_position` |
+| `piecewise` (default) | `segment_table`, `piecewise_trajectory`, `ephemeris_like_table`, `star_alt_az_approximation` |
+| `adaptive`     | `adaptive_fit` |
+| `minimax`      | `minimax_exp` |
+| `quadrature`   | `clenshaw_curtis_integral`, `gauss_chebyshev` |
+| `spectral`     | `spectral_differentiation` |
+| `binary`       | `binary_roundtrip` |
