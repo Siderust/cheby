@@ -33,6 +33,48 @@ fn interpolation_reproduces_samples() {
 }
 
 #[test]
+fn interpolation_single_node_is_constant_even_at_zero() {
+    // Regression: a single node at zero used to make `scale == 0`, producing
+    // a NaN division during evaluation instead of the constant interpolant.
+    let interp = BarycentricInterpolator::new([0.0_f64], [42.0_f64]).unwrap();
+    for &x in &[-2.5_f64, -0.1, 0.0, 0.7, 17.0] {
+        assert_abs_diff_eq!(interp.evaluate(x).unwrap(), 42.0, epsilon = 0.0);
+    }
+}
+
+#[test]
+fn interpolation_chebyshev_roots_constructor_matches_generic() {
+    use cheby::core::{nodes_mapped, Domain, NodeKind};
+    const N: usize = 12;
+    let domain = Domain::new(-1.0_f64, 3.0);
+    let xs = nodes_mapped::<f64, N>(domain, NodeKind::Roots);
+    let ys: [f64; N] = std::array::from_fn(|k| (xs[k] + 0.3).cos());
+    let generic = BarycentricInterpolator::new(xs, ys).unwrap();
+    let fast = BarycentricInterpolator::on_chebyshev_roots(domain, ys).unwrap();
+    for tau in [-0.95_f64, -0.4, 0.0, 0.2, 0.85] {
+        let x = domain.denormalize(tau);
+        assert_abs_diff_eq!(
+            fast.evaluate(x).unwrap(),
+            generic.evaluate(x).unwrap(),
+            epsilon = 1e-12
+        );
+    }
+}
+
+#[test]
+fn interpolation_lobatto_constructor_reproduces_samples() {
+    use cheby::core::{nodes_mapped, Domain, NodeKind};
+    const N: usize = 9;
+    let domain = Domain::new(0.0_f64, 2.0);
+    let xs = nodes_mapped::<f64, N>(domain, NodeKind::Lobatto);
+    let ys: [f64; N] = std::array::from_fn(|k| xs[k].sin());
+    let interp = BarycentricInterpolator::on_lobatto_nodes(domain, ys).unwrap();
+    for k in 0..N {
+        assert_abs_diff_eq!(interp.evaluate(xs[k]).unwrap(), ys[k], epsilon = 1e-12);
+    }
+}
+
+#[test]
 fn derivative_of_integral_recovers_series_approximately() {
     let series = ChebySeries::new([1.0, -0.5, 0.25, 0.0, 0.0]);
     let recovered = series.integral(0.0).derivative();
@@ -64,4 +106,30 @@ fn adaptive_fitting_converges_for_smooth_function() {
             .build::<f64>()
             .unwrap();
     assert!(result.report.converged);
+}
+
+#[test]
+#[cfg(feature = "adaptive")]
+fn adaptive_fitting_honors_non_power_of_two_limit() {
+    let result =
+        cheby::approx::adaptive::AdaptiveFit::new(Domain::new(-1.0, 1.0), |x: f64| (3.0 * x).sin())
+            .max_degree(20)
+            .absolute_tolerance(0.0)
+            .relative_tolerance(0.0)
+            .build::<f64>()
+            .unwrap();
+    assert_eq!(result.report.degree, 20);
+}
+
+#[test]
+#[cfg(feature = "adaptive")]
+fn adaptive_fitting_allows_small_degree_limit() {
+    let result =
+        cheby::approx::adaptive::AdaptiveFit::new(Domain::new(-1.0, 1.0), |x: f64| x.sin())
+            .max_degree(7)
+            .absolute_tolerance(0.0)
+            .relative_tolerance(0.0)
+            .build::<f64>()
+            .unwrap();
+    assert_eq!(result.report.degree, 7);
 }

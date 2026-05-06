@@ -31,7 +31,6 @@ spectral = ["calculus", "alloc"]
 
 serde = ["dep:serde", "qtty/serde", "alloc"]
 binary = ["alloc"]
-fast-dct = ["dep:rustfft"]
 
 full = [
     "std",
@@ -48,13 +47,12 @@ full = [
 ]
 
 [dependencies]
-qtty = { version = "0.6.1", default-features = false, features = ["cross-unit-ops"] }
+qtty = { version = "0.7.0", default-features = false, features = ["cross-unit-ops"] }
 serde = { version = "1.0", optional = true, features = ["derive"] }
-rustfft = { version = "6.2", optional = true }
 
 [dev-dependencies]
 approx = "0.5"
-criterion = "0.5"
+criterion = "0.8.2"
 proptest = "1.4"
 trybuild = "1.0"
 
@@ -78,3 +76,11 @@ required-features = ["quadrature"]
 [[example]]
 name = "spectral_differentiation"
 required-features = ["spectral"]
+
+[[example]]
+name = "binary_roundtrip"
+required-features = ["binary"]
+
+[[example]]
+name = "gauss_chebyshev"
+required-features = ["quadrature"]

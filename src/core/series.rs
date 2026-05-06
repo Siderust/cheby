@@ -92,7 +92,9 @@ impl<T: ChebyScalar, const N: usize> ChebySeries<T, N> {
 
     /// Return a normalized-coordinate indefinite integral series.
     ///
-    /// The array length is preserved; the highest possible term is truncated.
+    /// The array length is preserved; the single highest antiderivative term
+    /// (`b_N`) is truncated. For a non-truncating dynamic version see
+    /// [`ChebySeriesDyn::integral`].
     pub fn integral(&self, constant: T) -> Self {
         let mut out = [T::zero(); N];
         if N == 0 {
@@ -105,8 +107,12 @@ impl<T: ChebyScalar, const N: usize> ChebySeries<T, N> {
         if N > 2 {
             out[2] = out[2] + self.coeffs[1] / 4.0;
         }
-        for k in 2..(N.saturating_sub(1)) {
-            out[k + 1] = out[k + 1] + self.coeffs[k] / (2.0 * (k + 1) as f64);
+        // For k >= 2: ∫T_k = (T_{k+1}/(k+1) - T_{k-1}/(k-1)) / 2.
+        // Apply both contributions; only `b_{k+1}` for k = N-1 is dropped.
+        for k in 2..N {
+            if k + 1 < N {
+                out[k + 1] = out[k + 1] + self.coeffs[k] / (2.0 * (k + 1) as f64);
+            }
             out[k - 1] = out[k - 1] - self.coeffs[k] / (2.0 * (k - 1) as f64);
         }
         Self::new(out)
@@ -197,6 +203,19 @@ impl<T: ChebyScalar> ChebySeriesDyn<T> {
         &self.coeffs
     }
 
+    /// Number of coefficients (degree + 1).
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.coeffs.len()
+    }
+
+    /// Whether the series has no coefficients (always `false` once
+    /// constructed via [`Self::new`]; included for API completeness).
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.coeffs.is_empty()
+    }
+
     /// Consume into coefficients.
     #[inline]
     pub fn into_coeffs(self) -> Vec<T> {
@@ -207,5 +226,123 @@ impl<T: ChebyScalar> ChebySeriesDyn<T> {
     #[inline]
     pub fn evaluate(&self, x: f64) -> T {
         eval::evaluate(&self.coeffs, x)
+    }
+
+    /// Evaluate value and normalized derivative `df/dtau` together.
+    #[inline]
+    pub fn evaluate_both(&self, x: f64) -> (T, T) {
+        eval::evaluate_both(&self.coeffs, x)
+    }
+
+    /// Evaluate the normalized-coordinate derivative `df/dtau`.
+    #[inline]
+    pub fn evaluate_derivative(&self, x: f64) -> T {
+        eval::evaluate_derivative(&self.coeffs, x)
+    }
+
+    /// Return a normalized-coordinate derivative series.
+    ///
+    /// The output has `max(len() - 1, 1)` coefficients.
+    pub fn derivative(&self) -> Self {
+        let n = self.coeffs.len();
+        if n <= 1 {
+            return Self {
+                coeffs: alloc::vec![T::zero()],
+            };
+        }
+        let mut out = alloc::vec![T::zero(); n - 1];
+        out[n - 2] = self.coeffs[n - 1] * (2.0 * (n - 1) as f64);
+        if n > 2 {
+            for k in (1..=(n - 2)).rev() {
+                let prev = if k + 1 < out.len() {
+                    out[k + 1]
+                } else {
+                    T::zero()
+                };
+                out[k - 1] = prev + self.coeffs[k] * (2.0 * k as f64);
+            }
+        }
+        out[0] = out[0] / 2.0;
+        Self { coeffs: out }
+    }
+
+    /// Return a non-truncating normalized-coordinate indefinite integral
+    /// series. Output length is `len() + 1`.
+    pub fn integral(&self, constant: T) -> Self {
+        let n = self.coeffs.len();
+        let mut out = alloc::vec![T::zero(); n + 1];
+        out[0] = constant;
+        if n >= 1 {
+            out[1] = out[1] + self.coeffs[0];
+        }
+        if n >= 2 {
+            out[2] = out[2] + self.coeffs[1] / 4.0;
+        }
+        for k in 2..n {
+            out[k + 1] = out[k + 1] + self.coeffs[k] / (2.0 * (k + 1) as f64);
+            out[k - 1] = out[k - 1] - self.coeffs[k] / (2.0 * (k - 1) as f64);
+        }
+        Self { coeffs: out }
+    }
+}
+
+/// A dynamic Chebyshev series tied to a physical domain.
+#[cfg(feature = "alloc")]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct ChebySeriesDynOn<T, X> {
+    domain: Domain<X>,
+    series: ChebySeriesDyn<T>,
+}
+
+#[cfg(feature = "alloc")]
+impl<T: ChebyScalar, X: ChebyTime> ChebySeriesDynOn<T, X> {
+    /// Create a domain-aware dynamic series.
+    #[inline]
+    pub fn new(domain: Domain<X>, series: ChebySeriesDyn<T>) -> Self {
+        Self { domain, series }
+    }
+
+    /// Domain of validity.
+    #[inline]
+    pub fn domain(&self) -> Domain<X> {
+        self.domain
+    }
+
+    /// Underlying normalized-coordinate series.
+    #[inline]
+    pub fn series(&self) -> &ChebySeriesDyn<T> {
+        &self.series
+    }
+
+    /// Consume and return the underlying series.
+    #[inline]
+    pub fn into_series(self) -> ChebySeriesDyn<T> {
+        self.series
+    }
+
+    /// Evaluate inside the domain.
+    #[inline]
+    pub fn evaluate(&self, x: X) -> Result<T, ChebyError> {
+        if !self.domain.contains(x) {
+            return Err(ChebyError::EvaluationOutOfDomain);
+        }
+        Ok(self.series.evaluate(self.domain.normalize(x)))
+    }
+
+    /// Evaluate the dimensionally-correct physical derivative at `x`.
+    #[inline]
+    pub fn evaluate_derivative(
+        &self,
+        x: X,
+    ) -> Result<<T as DifferentiateWith<X>>::Derivative, ChebyError>
+    where
+        T: DifferentiateWith<X>,
+    {
+        if !self.domain.contains(x) {
+            return Err(ChebyError::EvaluationOutOfDomain);
+        }
+        let d_tau = self.series.evaluate_both(self.domain.normalize(x)).1;
+        Ok((d_tau * 2.0).scale_derivative(self.domain.end() - self.domain.start()))
     }
 }

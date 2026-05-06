@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Vallés Puig, Ramon
 
 #![forbid(unsafe_code)]
+#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 #![doc = include_str!("../README.md")]
 
