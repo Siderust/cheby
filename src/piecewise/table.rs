@@ -7,6 +7,10 @@ use crate::core::{ChebyError, ChebyScalar, ChebySeries, ChebyTime, Differentiate
 use crate::piecewise::{lookup, ChebySegment};
 
 /// A uniform table of Chebyshev segments.
+///
+/// The first segments have [`Self::segment_len`] width; the final segment may
+/// be shorter when the requested table end is not an exact multiple of that
+/// width. Table lookup treats the total range as half-open: `[start, end)`.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ChebySegmentTable<T, X, const N: usize> {
@@ -30,9 +34,22 @@ where
         if segment_len <= X::zero() {
             return Err(ChebyError::NonPositiveSegmentLength);
         }
+        let last_idx = segments.len() - 1;
         for (i, segment) in segments.iter().enumerate() {
             let expected = start + segment_len * i as f64;
-            if segment.domain().start() != expected {
+            let domain = segment.domain();
+            if domain.start() != expected {
+                return Err(ChebyError::InvalidDomain);
+            }
+            let width = domain.end() - domain.start();
+            if width <= X::zero() {
+                return Err(ChebyError::NonPositiveSegmentLength);
+            }
+            if i == last_idx {
+                if width > segment_len {
+                    return Err(ChebyError::InvalidDomain);
+                }
+            } else if width != segment_len {
                 return Err(ChebyError::InvalidDomain);
             }
         }
@@ -65,6 +82,9 @@ where
         end: X,
         segment_len: X,
     ) -> Result<Self, ChebyError> {
+        if !start.is_finite() || !end.is_finite() || !segment_len.is_finite() {
+            return Err(ChebyError::NonFiniteInput);
+        }
         if segment_len <= X::zero() {
             return Err(ChebyError::NonPositiveSegmentLength);
         }
@@ -113,7 +133,10 @@ where
     /// Table end.
     #[inline]
     pub fn end(&self) -> X {
-        self.start + self.segment_len * self.segments.len() as f64
+        self.segments
+            .last()
+            .map(|segment| segment.domain().end())
+            .unwrap_or(self.start)
     }
 
     /// Uniform segment length used for O(1) lookup.
@@ -131,6 +154,9 @@ where
     /// Look up a segment.
     #[inline]
     pub fn get_segment(&self, x: X) -> Option<&ChebySegment<T, X, N>> {
+        if self.segments.is_empty() || x < self.start || x >= self.end() {
+            return None;
+        }
         lookup::uniform_index(self.start, self.segment_len, self.segments.len(), x)
             .and_then(|idx| self.segments.get(idx))
             .filter(|segment| segment.contains(x))

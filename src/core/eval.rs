@@ -1,4 +1,10 @@
 //! Clenshaw evaluation for Chebyshev series.
+//!
+//! For coefficients `a_k`, the represented polynomial is
+//! `sum_k a_k T_k(x)`. Clenshaw evaluates that basis recurrence directly:
+//! it walks the coefficients backward with
+//! `b_k = 2x b_{k+1} - b_{k+2} + a_k`, then returns
+//! `a_0 + x b_1 - b_2`. This avoids converting the series to powers of `x`.
 
 use super::ChebyScalar;
 

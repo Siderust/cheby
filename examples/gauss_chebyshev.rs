@@ -14,5 +14,8 @@ fn main() {
 
     let j0_estimate: f64 = gauss_chebyshev::integrate_weighted::<_, N>(f64::cos);
     println!("∫ cos(x)/√(1−x²) dx ≈ {j0_estimate}");
-    println!("(reference: π·J₀(1) ≈ {})", core::f64::consts::PI * 0.7651976865579666);
+    println!(
+        "(reference: π·J₀(1) ≈ {})",
+        core::f64::consts::PI * 0.7651976865579666
+    );
 }

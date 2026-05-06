@@ -39,6 +39,52 @@ let value = series.evaluate(domain.normalize(1.25));
 `Domain<X>` maps `start -> -1`, midpoint `-> 0`, and `end -> 1`.
 `ChebySeries<T, N>` stores coefficients of `T_0..T_{N-1}`.
 
+## Mathematical model
+
+A Chebyshev series approximates a function on a finite interval `[a, b]` by
+first mapping the physical coordinate `x` into a dimensionless coordinate
+`tau` on `[-1, 1]`:
+
+```text
+mid  = (a + b) / 2
+half = (b - a) / 2
+tau  = (x - mid) / half
+x    = mid + half * tau
+```
+
+The approximating polynomial is stored in the first-kind Chebyshev basis:
+
+```text
+p(x) = sum_j a_j T_j(tau)
+T_0(tau) = 1
+T_1(tau) = tau
+T_{j+1}(tau) = 2 tau T_j(tau) - T_{j-1}(tau)
+```
+
+`fit_coeffs` expects samples at the roots of `T_N`:
+
+```text
+tau_k = cos(pi * (2k + 1) / (2N)),  k = 0..N-1
+a_0   = (1/N) sum_k f(tau_k)
+a_j   = (2/N) sum_k f(tau_k) cos(j pi (2k + 1) / (2N)), j > 0
+```
+
+Evaluation uses Clenshaw recurrence, which evaluates the same series without
+expanding it into monomials. This is usually more stable and faster than
+building powers `tau^j` explicitly.
+
+For a domain-aware series, derivatives and integrals apply the affine scale:
+
+```text
+dp/dx = (1 / half) dp/dtau = (2 / (b - a)) dp/dtau
+Integral from a to x = half * Integral from -1 to tau of p(s) ds
+```
+
+Use this crate when a smooth function on a bounded interval will be evaluated
+many times: ephemeris segments, trajectory tables, calibration curves,
+spectral collocation, quadrature rules, and compact tabulation of expensive
+functions are typical applications.
+
 ## Why Chebyshev?
 
 Chebyshev expansions are well conditioned on finite intervals, avoid the worst
@@ -72,7 +118,8 @@ sampled nodes and values while preserving value units.
 ## Approximation
 
 `approx::fit` fits coefficients from samples or functions. `adaptive` adds a
-builder that increases degree until coefficient-tail tolerances are met.
+builder that tries increasing coefficient counts up to the caller's
+`max_degree` until coefficient-tail tolerances are met.
 `minimax` exposes a Remez-style interface with convergence diagnostics.
 
 ## Piecewise tables

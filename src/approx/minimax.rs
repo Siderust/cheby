@@ -36,9 +36,7 @@
 use alloc::vec;
 use alloc::vec::Vec;
 
-use crate::core::{
-    basis, ChebyError, ChebySeries, ChebySeriesDyn, ChebySeriesOn, ChebyTime, Domain,
-};
+use crate::core::{ChebyError, ChebySeries, ChebySeriesDyn, ChebySeriesOn, ChebyTime, Domain};
 
 /// Options for the Remez exchange algorithm.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -159,6 +157,8 @@ where
     let n = degree + 1;
     let mut matrix = vec![0.0; m * (m + 1)];
     let mut coeffs = vec![0.0; n];
+    let mut residual = vec![0.0_f64; grid];
+    let mut blocks: Vec<(f64, f64)> = Vec::with_capacity(grid / 2 + 2);
     let mut prev_max_err = f64::INFINITY;
     let mut max_err = 0.0;
     let mut leveled = 0.0;
@@ -169,10 +169,23 @@ where
         iterations = iter;
 
         // Build linear system: row i = [T_0(tau_i) ... T_N(tau_i) | (-1)^i | f(x_i)]
+        // T_k(tau) is filled by the Chebyshev recurrence, one row at a time.
         for (i, &tau) in taus.iter().enumerate() {
             let row = i * (m + 1);
-            for k in 0..n {
-                matrix[row + k] = basis::t(k, tau);
+            if n >= 1 {
+                matrix[row] = 1.0;
+            }
+            if n >= 2 {
+                matrix[row + 1] = tau;
+                let two_tau = 2.0 * tau;
+                let mut tkm1 = 1.0;
+                let mut tk = tau;
+                for k in 2..n {
+                    let tkp1 = two_tau * tk - tkm1;
+                    matrix[row + k] = tkp1;
+                    tkm1 = tk;
+                    tk = tkp1;
+                }
             }
             matrix[row + n] = if i % 2 == 0 { 1.0 } else { -1.0 };
             matrix[row + m] = f(domain.denormalize(tau));
@@ -187,8 +200,7 @@ where
         }
         leveled = matrix[n * (m + 1) + m].abs();
 
-        // Sample residual on dense grid.
-        let mut residual = vec![0.0_f64; grid];
+        // Sample residual on dense grid into the reusable buffer.
         for (i, r) in residual.iter_mut().enumerate() {
             let tau = -1.0 + 2.0 * i as f64 / (grid - 1) as f64;
             let x = domain.denormalize(tau);
@@ -196,7 +208,7 @@ where
         }
 
         // Locate per-sign-block extrema.
-        let mut blocks: Vec<(f64, f64)> = Vec::new(); // (tau_max, residual_max_signed)
+        blocks.clear();
         let mut cur_sign = 0i8;
         let mut cur_best_idx = 0usize;
         let mut cur_best_abs = -1.0_f64;

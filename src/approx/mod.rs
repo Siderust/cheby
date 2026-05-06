@@ -3,11 +3,11 @@
 //! # Theory
 //!
 //! Given a function `f` on a [`crate::core::Domain`], `fit` produces a
-//! truncated Chebyshev series whose coefficients minimise the L² error
-//! at the Chebyshev nodes (interpolation in the polynomial sense).
+//! Chebyshev interpolating series by sampling `f` at roots of `T_N` and using
+//! the discrete cosine orthogonality formula for the coefficients.
 //! The optional [`adaptive`] module refines the degree until a target
 //! tolerance is met, and the optional [`minimax`] module replaces the
-//! L² fit with a real Remez exchange that minimises the L∞ error.
+//! root-sample fit with a Remez exchange that minimises the L∞ error.
 //!
 //! # Features
 //!
