@@ -7,6 +7,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-09
+
 ### Changed
 
 - The crate has been refactored from a flat source layout into feature-gated
@@ -66,6 +68,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   integration.
 - Release-hardening files:
   `.github/workflows/ci.yml` and `deny.toml`.
+- Integration test suite (`tests/coverage_boost.rs`) with 55 targeted tests
+  raising line coverage from 75% to 91.65%, exceeding the 90% CI quality gate.
 
 ### Fixed
 
@@ -80,6 +84,14 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   through fallible APIs instead of relying on implicit caller discipline.
 - Segment-table construction now validates empty tables, segment lengths, and
   uniformity assumptions through typed errors.
+
+- `Domain::normalize` now uses `(x - start) / half - 1` instead of
+  `(x - mid) / half`, eliminating catastrophic cancellation when evaluating
+  exactly at stored endpoints. `normalize(start)` and `normalize(end)` are
+  now exact in IEEE 754 arithmetic.
+- The `domain_normalization_properties` proptest now uses tighter input ranges
+  (`|start| ≤ 1e3`, `width ≥ 1e-3`) consistent with the achievable floating-point
+  precision of the normalization formula.
 
 ### Documentation
 

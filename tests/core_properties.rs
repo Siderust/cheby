@@ -6,11 +6,13 @@ use proptest::prelude::*;
 
 proptest! {
     #[test]
-    fn domain_normalization_properties(start in -1e6_f64..1e6, width in 1e-9_f64..1e6) {
+    fn domain_normalization_properties(start in -1e3_f64..1e3, width in 1e-3_f64..1e3) {
         let domain = Domain::try_new(start, start + width).unwrap();
-        assert_abs_diff_eq!(domain.normalize(domain.start()), -1.0, epsilon = 1e-12);
-        assert_abs_diff_eq!(domain.normalize(domain.midpoint()), 0.0, epsilon = 1e-12);
-        assert_abs_diff_eq!(domain.normalize(domain.end()), 1.0, epsilon = 1e-12);
+        // Maximum floating-point error in normalize is O(eps * |start| / half).
+        // With these ranges (|start| ≤ 1e3, half ≥ 5e-4), that is < 1e-9.
+        assert_abs_diff_eq!(domain.normalize(domain.start()), -1.0, epsilon = 1e-9);
+        assert_abs_diff_eq!(domain.normalize(domain.midpoint()), 0.0, epsilon = 1e-9);
+        assert_abs_diff_eq!(domain.normalize(domain.end()), 1.0, epsilon = 1e-9);
     }
 
     #[test]

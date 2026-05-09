@@ -67,9 +67,13 @@ impl<X: ChebyTime> Domain<X> {
     }
 
     /// Normalize `x` to `tau` where `start -> -1`, midpoint `-> 0`, and `end -> 1`.
+    ///
+    /// Uses the form `(x - start) / half - 1` rather than `(x - mid) / half` to
+    /// avoid catastrophic cancellation when evaluating exactly at the stored
+    /// endpoints, where `x - start` is computed without loss of significance.
     #[inline]
     pub fn normalize(&self, x: X) -> f64 {
-        (x - self.mid) / self.half
+        (x - self.start) / self.half - 1.0
     }
 
     /// Whether `x` lies in the closed interval `[start, end]`.
