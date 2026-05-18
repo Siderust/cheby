@@ -1,6 +1,6 @@
 [package]
 name = "cheby"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 authors = ["VPRamon <vallespuigramon@gmail.com>"]
 description = "Unit-safe Chebyshev approximation and spectral numerics for Rust."
@@ -47,7 +47,7 @@ full = [
 ]
 
 [dependencies]
-qtty = { version = "0.7.1", default-features = false, features = ["cross-unit-ops"] }
+qtty = { version = "0.8", default-features = false, features = ["cross-unit-ops"] }
 serde = { version = "1.0", optional = true, features = ["derive"] }
 
 [dev-dependencies]
