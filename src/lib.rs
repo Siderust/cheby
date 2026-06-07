@@ -33,10 +33,16 @@ pub use core::{
 pub use core::ChebySeriesDyn;
 
 #[cfg(feature = "alloc")]
+pub use core::ChebySeriesDynOn;
+
+#[cfg(feature = "alloc")]
 pub use core::RootOptions;
 
 #[cfg(feature = "approx")]
-pub use approx::fit::{fit_coeffs, fit_dyn_from_fn};
+pub use approx::fit::fit_coeffs;
+
+#[cfg(all(feature = "approx", feature = "alloc"))]
+pub use approx::fit::{fit_coeffs_dyn, fit_dyn_from_fn};
 
 #[cfg(feature = "piecewise")]
 pub use piecewise::{ChebySegment, ChebySegmentTable};

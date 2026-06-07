@@ -136,6 +136,37 @@ and segments apply the chain rule and use `qtty` multiplication/division so:
 - velocity over time integrates to position,
 - angular rate over time integrates to angle.
 
+## Root finding
+
+With the `alloc` feature, dynamic series support real root finding on the
+normalized interval `[-1, 1]`:
+
+```rust
+use cheby::{fit_dyn_from_fn, RootOptions};
+
+let series = fit_dyn_from_fn(12, |tau| tau * tau - 0.25).unwrap();
+let roots = series.roots(); // normalized tau in [-1, 1]
+
+let opts = RootOptions {
+    zero_tol: 1e-10,
+    ..RootOptions::default()
+};
+let refined = series.roots_with(opts);
+```
+
+The solver converts the Chebyshev expansion to a monic power polynomial, finds
+all roots with a Durand–Kerner iteration (equivalent to colleague-matrix
+eigenvalues for moderate degrees), then verifies residuals on `[-1, 1]`. A
+Chebyshev-node scan supplements tangency and repeated roots when the primary
+pass misses them. [`RootOptions`] controls bracket width, residual tolerance,
+and deduplication. Roots are numerical approximations intended for moderate
+polynomial degrees.
+
+Map normalized roots to a physical domain with [`ChebySeriesDynOn::roots`],
+or shift the constant term without refitting via
+[`ChebySeriesDyn::shifted_constant`] when searching multiple level sets of the
+same fitted signal.
+
 ## Quadrature
 
 `quadrature` contains Chebyshev-related rules only: Clenshaw-Curtis style
