@@ -28,6 +28,9 @@ pub mod nodes;
 pub mod scalar;
 pub mod series;
 
+#[cfg(feature = "alloc")]
+pub mod roots;
+
 pub use domain::Domain;
 pub use error::ChebyError;
 pub use eval::{evaluate, evaluate_both};
@@ -37,3 +40,6 @@ pub use series::{ChebySeries, ChebySeriesOn};
 
 #[cfg(feature = "alloc")]
 pub use series::{ChebySeriesDyn, ChebySeriesDynOn};
+
+#[cfg(feature = "alloc")]
+pub use roots::RootOptions;

@@ -286,6 +286,28 @@ impl<T: ChebyScalar> ChebySeriesDyn<T> {
     }
 }
 
+#[cfg(feature = "alloc")]
+impl ChebySeriesDyn<f64> {
+    /// Return a copy with the constant (`T₀`) coefficient shifted by `delta`.
+    ///
+    /// Equivalent to evaluating `p(τ) + delta` without refitting.
+    #[must_use]
+    pub fn shifted_constant(&self, delta: f64) -> Self {
+        let mut coeffs = self.coeffs.clone();
+        if !coeffs.is_empty() && delta.is_finite() {
+            coeffs[0] += delta;
+        }
+        Self { coeffs }
+    }
+
+    /// Shift the constant (`T₀`) coefficient in place by `delta`.
+    pub fn shift_constant_in_place(&mut self, delta: f64) {
+        if !self.coeffs.is_empty() && delta.is_finite() {
+            self.coeffs[0] += delta;
+        }
+    }
+}
+
 /// A dynamic Chebyshev series tied to a physical domain.
 #[cfg(feature = "alloc")]
 #[derive(Debug, Clone, PartialEq)]

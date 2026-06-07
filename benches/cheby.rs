@@ -7,7 +7,7 @@
 
 use std::hint::black_box;
 
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use qtty::{Kilometer, Second};
 
 fn evaluate_f64(c: &mut Criterion) {
@@ -173,6 +173,44 @@ fn spectral_diff_matrix(c: &mut Criterion) {
     });
 }
 
+fn fit_dyn(c: &mut Criterion) {
+    let mut group = c.benchmark_group("fit_dyn_from_fn_sin");
+    for degree in [4usize, 8, 12, 16, 24, 32] {
+        group.bench_with_input(BenchmarkId::new("deg", degree), &degree, |b, &degree| {
+            b.iter(|| cheby::fit_dyn_from_fn(degree, |x| black_box(x).sin()).unwrap())
+        });
+    }
+    group.finish();
+}
+
+fn evaluate_dyn(c: &mut Criterion) {
+    let series = cheby::fit_dyn_from_fn(16, f64::sin).unwrap();
+    c.bench_function("evaluate_dyn_n17", |b| {
+        b.iter(|| black_box(series.evaluate(black_box(0.37))))
+    });
+}
+
+fn roots_known_quadratic(c: &mut Criterion) {
+    let series = cheby::fit_dyn_from_fn(12, |x| x * x - 0.25).unwrap();
+    c.bench_function("roots_quadratic_deg12", |b| {
+        b.iter(|| black_box(series.roots()))
+    });
+}
+
+fn roots_by_degree(c: &mut Criterion) {
+    let mut group = c.benchmark_group("roots_product");
+    for degree in [4usize, 8, 12, 16, 24, 32] {
+        let series = cheby::fit_dyn_from_fn(degree, |x| {
+            (1..=degree).fold(x, |acc, k| acc * (x - (k as f64 * 0.07 - 0.5)))
+        })
+        .unwrap();
+        group.bench_with_input(BenchmarkId::new("deg", degree), &series, |b, series| {
+            b.iter(|| black_box(series.roots()))
+        });
+    }
+    group.finish();
+}
+
 criterion_group!(
     benches,
     evaluate_f64,
@@ -181,6 +219,10 @@ criterion_group!(
     evaluate_derivative_quantity,
     fit_fixed,
     fit_quantity,
+    fit_dyn,
+    evaluate_dyn,
+    roots_known_quadratic,
+    roots_by_degree,
     adaptive_fit,
     minimax_remez,
     piecewise_lookup,
