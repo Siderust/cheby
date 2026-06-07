@@ -74,13 +74,16 @@ pub fn fit_from_fn<T: ChebyScalar, const N: usize>(f: impl Fn(f64) -> T) -> Cheb
     ChebySeries::new(fit_coeffs(&values))
 }
 
-/// Fit a dynamic Chebyshev series of `degree` on normalized `[-1, 1]`.
+/// Fit a dynamic Chebyshev series of polynomial `degree` on normalized `[-1, 1]`.
+///
+/// The returned series has `degree + 1` coefficients (`T_0` through `T_degree`).
+/// `degree = 0` yields a constant (single-coefficient) fit sampled at `τ = 0`.
 #[cfg(feature = "alloc")]
 pub fn fit_dyn_from_fn(
     degree: usize,
     mut f: impl FnMut(f64) -> f64,
 ) -> Result<ChebySeriesDyn<f64>, ChebyError> {
-    let n = degree.saturating_add(1).max(2);
+    let n = degree.saturating_add(1);
     let unit_nodes = unit_root_nodes(n);
     let values: Vec<f64> = unit_nodes.iter().map(|&x| f(x)).collect();
     let coeffs = fit_coeffs_dyn(&values, &unit_nodes);

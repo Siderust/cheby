@@ -154,13 +154,16 @@ let opts = RootOptions {
 let refined = series.roots_with(opts);
 ```
 
-The solver converts the Chebyshev expansion to a monic power polynomial, finds
-all roots with a Durand–Kerner iteration (equivalent to colleague-matrix
-eigenvalues for moderate degrees), then verifies residuals on `[-1, 1]`. A
-Chebyshev-node scan supplements tangency and repeated roots when the primary
-pass misses them. [`RootOptions`] controls bracket width, residual tolerance,
-and deduplication. Roots are numerical approximations intended for moderate
-polynomial degrees.
+The solver converts the Chebyshev expansion to a monic power polynomial and finds
+roots with a **Durand–Kerner** iteration, then verifies residuals on `[-1, 1]`.
+When the primary pass misses roots (tangency, repeated roots), a fallback
+Chebyshev-node scan uses Brent refinement and minimum search. Constant or
+identically-zero series return an empty root list.
+
+[`RootOptions`] controls bracket width (`unit_tol`), residual tolerance
+(`zero_tol`), and deduplication (`dedupe_eps`). Root finding is intended for
+moderate polynomial degrees and can be less stable than Clenshaw evaluation at
+high degree.
 
 Map normalized roots to a physical domain with [`ChebySeriesDynOn::roots`],
 or shift the constant term without refitting via

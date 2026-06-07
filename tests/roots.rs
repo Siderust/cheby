@@ -168,6 +168,70 @@ fn domain_mapped_roots() {
     assert!((roots[0] - 5.0).abs() < 1e-8);
 }
 
+#[test]
+fn constant_zero_series_has_no_roots() {
+    assert!(poly(&[0.0]).roots_with(opts()).is_empty());
+    assert!(poly(&[1e-15]).roots_with(opts()).is_empty());
+}
+
+#[test]
+fn constant_nonzero_series_has_no_roots() {
+    assert!(poly(&[1.0]).roots_with(opts()).is_empty());
+    assert!(poly(&[-2.5]).roots_with(opts()).is_empty());
+}
+
+#[test]
+fn degenerate_linear_has_no_roots() {
+    let p = poly(&[1.0, 1e-15]);
+    assert!(p.roots_with(opts()).is_empty());
+}
+
+#[test]
+fn fit_degree_zero_produces_one_coefficient() {
+    let p = fit_dyn_from_fn(0, |_| 3.5).unwrap();
+    assert_eq!(p.coeffs().len(), 1);
+    assert!((p.evaluate(0.0) - 3.5).abs() < 1e-12);
+    assert!(p.roots_with(opts()).is_empty());
+}
+
+#[test]
+fn fit_degree_one_produces_two_coefficients() {
+    let p = fit_dyn_from_fn(1, |x| 2.0 * x + 1.0).unwrap();
+    assert_eq!(p.coeffs().len(), 2);
+    let roots = p.roots_with(opts());
+    assert_eq!(roots.len(), 1);
+    assert!((roots[0] + 0.5).abs() < 1e-8);
+    assert_residuals(&p, &roots, opts().zero_tol);
+}
+
+#[test]
+fn chebyshev_t24_roots() {
+    let n = 24usize;
+    let mut coeffs = vec![0.0_f64; n + 1];
+    coeffs[n] = 1.0;
+    let p = ChebySeriesDyn::new(coeffs).unwrap();
+    let options = opts();
+    let roots = p.roots_with(options);
+    assert_eq!(roots.len(), n, "{roots:?}");
+    assert_residuals(&p, &roots, options.zero_tol);
+}
+
+#[test]
+fn strict_zero_tol_can_exclude_approximate_roots() {
+    let p = fit_dyn_from_fn(12, |x| (x - 0.3).powi(2)).unwrap();
+    let loose = p.roots_with(RootOptions {
+        zero_tol: 1e-6,
+        ..opts()
+    });
+    let strict = p.roots_with(RootOptions {
+        zero_tol: 1e-14,
+        ..opts()
+    });
+    assert!(!loose.is_empty());
+    assert!(strict.is_empty() || strict.len() <= loose.len());
+    assert_residuals(&p, &loose, 1e-6);
+}
+
 proptest! {
     #[test]
     fn fitted_quadratic_roots_satisfy_residual(a in -0.9f64..0.9, b in -0.9f64..0.9) {

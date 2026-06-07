@@ -5,12 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.0] - 2026-06-07
 
 ### Added
 
 - `fit_dyn_from_fn` and `fit_coeffs_dyn` for dynamic Chebyshev fitting on normalized `[-1, 1]`.
-- `ChebySeriesDyn<f64>::roots`, `roots_with`, and `tail_norm` for root finding on the unit interval via colleague-matrix / Durand–Kerner iteration with Chebyshev-node supplementation for tangency roots.
+- `ChebySeriesDyn<f64>::roots`, `roots_with`, and `tail_norm` for root finding on the unit interval via Durand–Kerner iteration with Chebyshev-node fallback for tangency roots.
 - `ChebySeriesDyn<f64>::shifted_constant` and `shift_constant_in_place` for level-set root searches without refitting.
 - `ChebySeriesDynOn<f64, X>::roots` and `roots_with` for domain-mapped roots.
 - `RootOptions` with `validated` and `effective` tolerance sanitization.
@@ -19,7 +19,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 ### Changed
 
 - Shared fixed-size and dynamic coefficient fitting through a single `accumulate_coeffs` helper.
-- Root finding converts Chebyshev coefficients to a monic power polynomial, finds all roots simultaneously, and verifies residuals against `RootOptions::zero_tol`.
+- Root finding converts Chebyshev coefficients to power basis, applies Durand–Kerner, verifies residuals against `RootOptions::zero_tol`, and falls back to node scanning when needed.
+- Constant and identically-zero series return an empty root list.
+- `fit_dyn_from_fn(0, …)` now produces a single-coefficient constant fit.
 
 ## [0.3.0] - 2026-05-18
 

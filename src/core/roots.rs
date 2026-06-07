@@ -3,23 +3,27 @@
 //! # Algorithm
 //!
 //! Real roots of a Chebyshev expansion `p(τ) = Σ aₖ Tₖ(τ)` on `τ ∈ [-1, 1]` are
-//! found via the **colleague-matrix / eigenvalue formulation**:
+//! found in two stages:
 //!
-//! 1. Trim trailing near-zero high coefficients and reject non-finite input.
-//! 2. Convert the Chebyshev expansion to a monomial (power-basis) polynomial on
-//!    `[-1, 1]`. This avoids evaluating ill-conditioned high-degree monomials directly
-//!    while still enabling robust all-roots solvers.
-//! 3. Find all roots simultaneously with a Durand–Kerner iteration on the monic
-//!    power polynomial (equivalent to colleague-matrix eigenvalues for moderate
-//!    degrees).
-//! 4. Keep real roots in `[-1, 1]`, deduplicate, and verify each against
-//!    `|p(τ)| ≤ zero_tol`.
-//! 5. Supplement with Chebyshev-node scanning and Brent refinement on any missed
-//!    sign-change intervals or tangency minima (important for repeated roots).
+//! 1. **Primary pass:** trim trailing near-zero high coefficients, reject non-finite
+//!    input, convert the Chebyshev expansion to a monic power-basis polynomial, and
+//!    locate roots with a **Durand–Kerner** iteration. Candidates are kept when they
+//!    are real (`|Im| ≤ unit_tol`), lie in `[-1, 1]`, and satisfy
+//!    `|p(τ)| ≤ zero_tol` after Clenshaw evaluation.
+//! 2. **Fallback pass:** if too few roots are found, scan Chebyshev nodes on `[-1, 1]`,
+//!    refine sign-change brackets with **Brent's method**, and search for tangency
+//!    minima with Newton and golden-section refinement. Fallback thresholds scale
+//!    with [`RootOptions::zero_tol`].
 //!
-//! Linear series (`len == 2`) use a closed-form root. Endpoint and repeated roots
-//! are only resolved to the extent allowed by [`RootOptions::zero_tol`] and
-//! [`RootOptions::dedupe_eps`].
+//! Linear series (`len == 2`) use a closed-form root. Constant series return an
+//! empty list (see below). Repeated or tangent roots are only resolved to the extent
+//! allowed by [`RootOptions::zero_tol`] and [`RootOptions::dedupe_eps`].
+//!
+//! # Constant and degenerate series
+//!
+//! A series with a single coefficient (constant), an identically-zero series, or a
+//! near-zero constant within `zero_tol` has **no isolated roots** on `[-1, 1]` and
+//! returns an empty list. A non-zero constant likewise returns an empty list.
 //!
 //! # Coordinate system
 //!
@@ -31,9 +35,11 @@
 //!
 //! - Intended for **moderate degrees** (roughly up to a few dozen coefficients).
 //!   Cost grows superlinearly with degree because all roots are found at once.
+//! - Root finding converts to power basis internally; this can be **less stable than
+//!   Clenshaw evaluation** at high degree even when residuals pass `zero_tol`.
 //! - Roots are **numerical approximations** controlled by [`RootOptions`].
-//! - Multiple or tangent roots are harder; tighten `zero_tol` or reduce degree /
-//!   segment length when residuals are unsatisfactory.
+//! - Multiple or tangent roots are harder; tighten `zero_tol` or reduce degree when
+//!   residuals are unsatisfactory.
 //! - Non-finite coefficients yield an empty root list.
 
 #[cfg(feature = "alloc")]
@@ -136,6 +142,9 @@ impl ChebySeriesDyn<f64> {
     ///
     /// Invalid [`RootOptions`] fields are replaced with defaults via
     /// [`RootOptions::effective`]. Non-finite coefficients yield an empty list.
+    ///
+    /// Constant, identically-zero, and near-zero constant series return an empty
+    /// list because they have no isolated roots on `[-1, 1]`.
     pub fn roots_with(&self, opts: RootOptions) -> Vec<f64> {
         let opts = opts.effective();
         if !coefficients_are_finite(self.coeffs()) {
@@ -143,13 +152,7 @@ impl ChebySeriesDyn<f64> {
         }
 
         let coeffs = trim_trailing_coeffs(self.coeffs(), opts.zero_tol);
-        if coeffs.is_empty() {
-            return Vec::new();
-        }
-        if coeffs.len() == 1 {
-            if coeffs[0].abs() <= opts.zero_tol && on_unit_interval(0.0, opts.unit_tol) {
-                return vec![0.0];
-            }
+        if coeffs.len() <= 1 {
             return Vec::new();
         }
         if coeffs.len() == 2 {
@@ -176,9 +179,6 @@ impl ChebySeriesDyn<f64> {
         debug_assert_eq!(coeffs.len(), 2);
         let a = coeffs[1];
         if a.abs() <= opts.zero_tol {
-            if coeffs[0].abs() <= opts.zero_tol && on_unit_interval(0.0, opts.unit_tol) {
-                return vec![0.0];
-            }
             return Vec::new();
         }
         let x = -coeffs[0] / a;
@@ -665,6 +665,12 @@ mod tests {
         let roots = p.roots_with(opts);
         assert!(!roots.is_empty(), "{roots:?}");
         assert!(roots.iter().any(|r| (*r + 0.2).abs() < 5e-3), "{roots:?}");
+    }
+
+    #[test]
+    fn constant_zero_series_has_no_roots() {
+        let p = ChebySeriesDyn::new(vec![0.0]).unwrap();
+        assert!(p.roots_with(RootOptions::default()).is_empty());
     }
 
     #[test]
