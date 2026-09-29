@@ -43,7 +43,11 @@
 //! - Non-finite coefficients yield an empty root list.
 
 #[cfg(feature = "alloc")]
+use alloc::vec;
+#[cfg(feature = "alloc")]
 use alloc::vec::Vec;
+
+use qtty::{Real, Transcendental};
 
 use super::{ChebyError, ChebySeriesDyn, ChebySeriesDynOn, ChebyTime};
 
