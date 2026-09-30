@@ -2,6 +2,9 @@
 
 use crate::core::{nodes, ChebyError, ChebyScalar, ChebyTime, Domain, NodeKind};
 
+#[cfg(not(feature = "std"))]
+use qtty::Transcendental;
+
 /// Barycentric interpolator over supplied nodes and values.
 ///
 /// For `N == 1`, the interpolant is the constant `values[0]` and `scale` is
