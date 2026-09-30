@@ -8,9 +8,9 @@
 use crate::core::{nodes, ChebyError, ChebyScalar, ChebySeries, ChebySeriesOn, Domain, NodeKind};
 
 #[cfg(feature = "alloc")]
-use alloc::vec::Vec;
-#[cfg(feature = "alloc")]
 use crate::core::ChebySeriesDyn;
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
 
 /// Compute Chebyshev coefficients from values sampled at roots of `T_N`.
 ///
