@@ -710,7 +710,10 @@ mod tests {
         assert_eq!(clamp_unit(-2.0), -1.0);
         assert_eq!(clamp_unit(2.0), 1.0);
 
-        assert_eq!(trim_trailing_coeffs(&[1.0, 2.0, 0.0, 0.0], 1e-12), &[1.0, 2.0]);
+        assert_eq!(
+            trim_trailing_coeffs(&[1.0, 2.0, 0.0, 0.0], 1e-12),
+            &[1.0, 2.0]
+        );
         assert_eq!(chebyshev_to_power(&[2.0]), vec![2.0]);
         assert_eq!(chebyshev_to_power(&[1.0, 2.0, 3.0]), vec![-2.0, 2.0, 6.0]);
 
@@ -747,63 +750,18 @@ mod tests {
         let unit_tol = 1e-12;
         let zero_tol = 1e-12;
 
-        assert!(brent_on_unit(
-            f64::NAN,
-            1.0,
-            f64::NAN,
-            1.0,
-            |x| x,
-            unit_tol,
-            zero_tol,
-        )
-        .is_none());
+        assert!(brent_on_unit(f64::NAN, 1.0, f64::NAN, 1.0, |x| x, unit_tol, zero_tol,).is_none());
 
-        let lo_root = brent_on_unit(
-            -1.0,
-            1.0,
-            0.0,
-            2.0,
-            |x| x + 1.0,
-            unit_tol,
-            zero_tol,
-        )
-        .unwrap();
+        let lo_root = brent_on_unit(-1.0, 1.0, 0.0, 2.0, |x| x + 1.0, unit_tol, zero_tol).unwrap();
         assert!((lo_root + 1.0).abs() < zero_tol);
 
-        let hi_root = brent_on_unit(
-            -1.0,
-            1.0,
-            -2.0,
-            0.0,
-            |x| x - 1.0,
-            unit_tol,
-            zero_tol,
-        )
-        .unwrap();
+        let hi_root = brent_on_unit(-1.0, 1.0, -2.0, 0.0, |x| x - 1.0, unit_tol, zero_tol).unwrap();
         assert!((hi_root - 1.0).abs() < zero_tol);
 
-        assert!(brent_on_unit(
-            0.0,
-            1.0,
-            1.0,
-            2.0,
-            |x| x + 1.0,
-            unit_tol,
-            zero_tol,
-        )
-        .is_none());
+        assert!(brent_on_unit(0.0, 1.0, 1.0, 2.0, |x| x + 1.0, unit_tol, zero_tol,).is_none());
 
         let f = |x: f64| x * x * x - 0.125;
-        let root = brent_on_unit(
-            0.0,
-            1.0,
-            f(0.0),
-            f(1.0),
-            f,
-            unit_tol,
-            zero_tol,
-        )
-        .unwrap();
+        let root = brent_on_unit(0.0, 1.0, f(0.0), f(1.0), f, unit_tol, zero_tol).unwrap();
         assert!((root - 0.5).abs() < 1e-10);
 
         let mut exact = |x: f64| x - 0.25;
