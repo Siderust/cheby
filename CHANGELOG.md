@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-09-30
+
+### Fixed
+
+- Fixed dynamic fitting and root-finding builds in `no_std` + `alloc` configurations by importing `Vec` from `alloc`.
+- Updated crate metadata to advertise `no-std` support.
+
 ## [0.4.0] - 2026-06-07
 
 ### Added
