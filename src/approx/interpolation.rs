@@ -1,6 +1,5 @@
 //! Barycentric interpolation.
 
-use qtty::Transcendental;
 use crate::core::{nodes, ChebyError, ChebyScalar, ChebyTime, Domain, NodeKind};
 
 /// Barycentric interpolator over supplied nodes and values.

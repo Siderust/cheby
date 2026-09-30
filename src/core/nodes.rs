@@ -1,7 +1,5 @@
 //! Chebyshev node families.
 
-use qtty::Transcendental;
-
 use super::{ChebyTime, Domain};
 
 /// Supported Chebyshev node families.

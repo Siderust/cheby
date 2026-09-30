@@ -6,7 +6,6 @@
 //! and only `O(N)` calls to `cos` (used to build the node grid once).
 
 use crate::core::{nodes, ChebyError, ChebyScalar, ChebySeries, ChebySeriesOn, Domain, NodeKind};
-use qtty::Transcendental;
 
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;

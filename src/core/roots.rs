@@ -47,8 +47,6 @@ use alloc::vec;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
-use qtty::{Real, Transcendental};
-
 use super::{ChebyError, ChebySeriesDyn, ChebySeriesDynOn, ChebyTime};
 
 const DEFAULT_UNIT_TOL: f64 = 1e-13;
