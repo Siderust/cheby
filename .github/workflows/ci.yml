@@ -146,8 +146,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@v1
+      - uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: 1.97.1
           components: miri
       - run: cargo miri test --lib --all-features
