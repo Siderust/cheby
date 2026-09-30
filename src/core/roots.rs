@@ -47,6 +47,9 @@ use alloc::vec;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
+#[cfg(not(feature = "std"))]
+use qtty::{Real, Transcendental};
+
 use super::{ChebyError, ChebySeriesDyn, ChebySeriesDynOn, ChebyTime};
 
 const DEFAULT_UNIT_TOL: f64 = 1e-13;
@@ -690,6 +693,174 @@ mod tests {
             assert_eq!(roots.len(), n, "T_{n} should have {n} roots, got {roots:?}");
             assert_roots_within_tol(&p, &roots, opts);
         }
+    }
+
+    #[test]
+    fn numeric_helpers_cover_edge_cases() {
+        let opts = RootOptions::default();
+
+        assert_eq!(positive_finite_tol(1e-6).unwrap(), 1e-6);
+        assert!(positive_finite_tol(0.0).is_err());
+        assert!(positive_finite_tol(f64::NAN).is_err());
+
+        assert!(coefficients_are_finite(&[1.0, -2.0, 3.0]));
+        assert!(!coefficients_are_finite(&[1.0, f64::INFINITY]));
+        assert!(on_unit_interval(1.0 + opts.unit_tol * 0.5, opts.unit_tol));
+        assert!(!on_unit_interval(1.1, opts.unit_tol));
+        assert_eq!(clamp_unit(-2.0), -1.0);
+        assert_eq!(clamp_unit(2.0), 1.0);
+
+        assert_eq!(trim_trailing_coeffs(&[1.0, 2.0, 0.0, 0.0], 1e-12), &[1.0, 2.0]);
+        assert_eq!(chebyshev_to_power(&[2.0]), vec![2.0]);
+        assert_eq!(chebyshev_to_power(&[1.0, 2.0, 3.0]), vec![-2.0, 2.0, 6.0]);
+
+        let mut dst = [1.0, 2.0];
+        accumulate_scaled(&mut dst, &[10.0, 20.0], 0.0);
+        assert_eq!(dst, [1.0, 2.0]);
+
+        assert!(durand_kerner_real_roots(&[1.0], opts).is_empty());
+        assert!(durand_kerner_real_roots(&[1.0, 0.0], opts).is_empty());
+
+        let guesses = initial_durand_kerner_guess(4);
+        assert_eq!(guesses.len(), 4);
+        assert!((guesses[0].abs() - 0.8).abs() < 1e-12);
+
+        let a = Complex { re: 1.0, im: 2.0 };
+        let b = Complex { re: 3.0, im: -1.0 };
+        let sum = cadd(a, b);
+        assert_eq!((sum.re, sum.im), (4.0, 1.0));
+        let diff = csub(a, b);
+        assert_eq!((diff.re, diff.im), (-2.0, 3.0));
+        let product = cmul(a, b);
+        assert_eq!((product.re, product.im), (5.0, 5.0));
+        let quotient = cdiv(product, b);
+        assert!((quotient.re - a.re).abs() < 1e-12);
+        assert!((quotient.im - a.im).abs() < 1e-12);
+
+        let value = eval_power(&[1.0, 2.0, 3.0], 2.0, 0.0);
+        assert!((value.re - 17.0).abs() < 1e-12);
+        assert!(value.im.abs() < 1e-12);
+    }
+
+    #[test]
+    fn brent_and_verification_cover_validation_and_iteration() {
+        let unit_tol = 1e-12;
+        let zero_tol = 1e-12;
+
+        assert!(brent_on_unit(
+            f64::NAN,
+            1.0,
+            f64::NAN,
+            1.0,
+            |x| x,
+            unit_tol,
+            zero_tol,
+        )
+        .is_none());
+
+        let lo_root = brent_on_unit(
+            -1.0,
+            1.0,
+            0.0,
+            2.0,
+            |x| x + 1.0,
+            unit_tol,
+            zero_tol,
+        )
+        .unwrap();
+        assert!((lo_root + 1.0).abs() < zero_tol);
+
+        let hi_root = brent_on_unit(
+            -1.0,
+            1.0,
+            -2.0,
+            0.0,
+            |x| x - 1.0,
+            unit_tol,
+            zero_tol,
+        )
+        .unwrap();
+        assert!((hi_root - 1.0).abs() < zero_tol);
+
+        assert!(brent_on_unit(
+            0.0,
+            1.0,
+            1.0,
+            2.0,
+            |x| x + 1.0,
+            unit_tol,
+            zero_tol,
+        )
+        .is_none());
+
+        let f = |x: f64| x * x * x - 0.125;
+        let root = brent_on_unit(
+            0.0,
+            1.0,
+            f(0.0),
+            f(1.0),
+            f,
+            unit_tol,
+            zero_tol,
+        )
+        .unwrap();
+        assert!((root - 0.5).abs() < 1e-10);
+
+        let mut exact = |x: f64| x - 0.25;
+        assert_eq!(
+            verified_root(0.25, &mut exact, unit_tol, zero_tol),
+            Some(0.25)
+        );
+
+        let mut non_root = |x: f64| x + 1.0;
+        assert!(verified_root(0.25, &mut non_root, unit_tol, zero_tol).is_none());
+
+        let mut outside = |_x: f64| 0.0;
+        assert!(verified_root(2.0, &mut outside, unit_tol, zero_tol).is_none());
+    }
+
+    #[test]
+    fn fallback_refinement_helpers_cover_success_and_failure_paths() {
+        let opts = RootOptions {
+            unit_tol: 1e-10,
+            zero_tol: 1e-8,
+            dedupe_eps: 1e-8,
+        };
+
+        let tangent = fit_dyn_from_fn(12, |x| (x - 0.2) * (x - 0.2)).unwrap();
+        let refined = refine_minimum_magnitude(&tangent, 0.0, 0.4, opts).unwrap();
+        assert!((refined - 0.2).abs() < 1e-4);
+
+        let linear = fit_dyn_from_fn(4, |x| x - 0.25).unwrap();
+        let polished = polish_newton_minimum(&linear, 0.1, opts).unwrap();
+        assert!((polished - 0.25).abs() < 1e-6);
+
+        let constant = ChebySeriesDyn::new(vec![1.0]).unwrap();
+        assert!(polish_newton_minimum(&constant, 0.0, opts).is_none());
+        assert!(refine_minimum_magnitude(&constant, -0.5, 0.5, opts).is_none());
+
+        assert!(has_nearby_root(&[0.1, 0.5], 0.1 + 1e-9, 1e-8));
+        assert!(!has_nearby_root(&[0.1, 0.5], 0.3, 1e-8));
+
+        let mut values = vec![0.5, f64::NAN, 0.1, 0.1 + 1e-10, -0.2];
+        sort_dedup_f64(&mut values, 1e-8);
+        assert_eq!(values.len(), 3);
+        assert_eq!(values[0], -0.2);
+        assert_eq!(values[1], 0.1);
+        assert_eq!(values[2], 0.5);
+    }
+
+    #[test]
+    fn domain_mapped_roots_are_exercised() {
+        let series = fit_dyn_from_fn(8, |x| x).unwrap();
+        let mapped = ChebySeriesDynOn::new(crate::Domain::new(10.0, 20.0), series);
+        let roots = mapped.roots();
+        assert_eq!(roots.len(), 1);
+        assert!((roots[0] - 15.0).abs() < 1e-10);
+
+        let roots_with = mapped.roots_with(RootOptions::default());
+        assert_eq!(roots_with.len(), 1);
+        assert!((roots_with[0] - 15.0).abs() < 1e-10);
     }
 
     pub(crate) fn assert_roots_within_tol(
