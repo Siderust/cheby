@@ -1,14 +1,14 @@
 [package]
 name = "cheby"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2021"
 authors = ["VPRamon <vallespuigramon@gmail.com>"]
 description = "Unit-safe Chebyshev approximation and spectral numerics for Rust."
 license = "AGPL-3.0-only"
 readme = "README.md"
 repository = "https://github.com/Siderust/cheby"
-keywords = ["chebyshev", "interpolation", "clenshaw", "numerics", "science"]
-categories = ["science", "mathematics"]
+keywords = ["chebyshev", "interpolation", "clenshaw", "numerics", "no-std"]
+categories = ["science", "mathematics", "no-std"]
 
 [lib]
 name = "cheby"

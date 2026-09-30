@@ -1,6 +1,17 @@
 # cheby
 
-`cheby`: unit-safe Chebyshev approximation and spectral numerics for Rust.
+[![Crates.io](https://img.shields.io/crates/v/cheby)](https://crates.io/crates/cheby)
+[![docs.rs](https://img.shields.io/docsrs/cheby)](https://docs.rs/cheby)
+[![CI](https://github.com/Siderust/cheby/actions/workflows/ci.yml/badge.svg)](https://github.com/Siderust/cheby/actions/workflows/ci.yml)
+[![License: AGPL-3.0-only](https://img.shields.io/badge/license-AGPL--3.0--only-blue)](LICENSE)
+
+> Unit-safe Chebyshev approximation and spectral numerics for Rust.
+
+Reusable numerical primitives for evaluating, fitting, differentiating and
+integrating Chebyshev series on typed physical domains. Designed for stable
+scientific computing, compact piecewise tables and `no_std` environments.
+
+[Documentation](https://docs.rs/cheby) · [Crate](https://crates.io/crates/cheby) · [Examples](examples/README.md)
 
 This crate is a reusable mathematical toolkit for Chebyshev basis functions,
 nodes, series evaluation, interpolation, approximation, calculus, piecewise

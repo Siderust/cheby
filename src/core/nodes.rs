@@ -1,5 +1,8 @@
 //! Chebyshev node families.
 
+#[cfg(not(feature = "std"))]
+use qtty::Transcendental;
+
 use super::{ChebyTime, Domain};
 
 /// Supported Chebyshev node families.

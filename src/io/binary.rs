@@ -59,8 +59,10 @@ pub fn decode_f64_series(bytes: &[u8]) -> Result<ChebySeriesDyn<f64>, ChebyError
         return Err(ChebyError::BinaryLengthMismatch);
     }
     let mut coeffs = Vec::with_capacity(len);
-    for chunk in bytes[HEADER_LEN..payload_len].chunks_exact(8) {
-        coeffs.push(f64::from_le_bytes(chunk.try_into().unwrap()));
+    let (chunks, remainder) = bytes[HEADER_LEN..payload_len].as_chunks::<8>();
+    debug_assert!(remainder.is_empty());
+    for chunk in chunks {
+        coeffs.push(f64::from_le_bytes(*chunk));
     }
     ChebySeriesDyn::new(coeffs)
 }
