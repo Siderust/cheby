@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] - 2026-09-30
+
+### Fixed
+
+- Fixed `no_std` approximation builds by importing `qtty::Transcendental` in the fitting and interpolation modules where transcendental methods are provided by the trait.
+
 ## [0.4.1] - 2026-09-30
 
 ### Fixed
