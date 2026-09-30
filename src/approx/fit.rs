@@ -7,6 +7,9 @@
 
 use crate::core::{nodes, ChebyError, ChebyScalar, ChebySeries, ChebySeriesOn, Domain, NodeKind};
 
+#[cfg(not(feature = "std"))]
+use qtty::Transcendental;
+
 #[cfg(feature = "alloc")]
 use crate::core::ChebySeriesDyn;
 #[cfg(feature = "alloc")]
